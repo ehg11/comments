@@ -16,7 +16,19 @@ module.exports = {
       fontFamily: {
         sorabold: ["Sora-Bold", "sans-serif"],
         sora: ["Sora", "sans-serif"],
-      }
+      },
+      colors: {
+        'light': '#F6F6F7',
+        'light_accent': '#61AFA9',
+        'main': '#989692',
+        'dark_accent': '#92939D',
+        'dark': '#474752',
+        'primary': '#989692',
+        'important': '#474752',
+        'success': '#63a864',
+        'warning': '#e0972c',
+        'danger': '#f44336',
+      },
     },
   },
   plugins: [
