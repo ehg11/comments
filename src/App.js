@@ -17,6 +17,9 @@ export default function App() {
     const [all_cards, dispatch] = useReducer(reducer, test_cards);
 
     function reducer(cards, action) {
+        if (cards.find(card => !card.finalized)) {
+            return cards;
+        }
         switch(action.type) {
             case ACTIONS.SUBMIT:
                 return cards.map(card => {
@@ -26,10 +29,11 @@ export default function App() {
                     return card;
                 })
             case ACTIONS.ADD_NEWCARD:
-                if (cards.find(card => !card.finalized)) {
-                    return cards;
-                }
                 return [emptyCard(), ...cards]
+            case ACTIONS.ADD_SUBCARD:
+                const parent_index = cards.findIndex(card => card.id === action.payload.id);
+                cards.splice(parent_index + 1, 0, emptyCard(action.payload.level + 1))
+                return cards;
             case ACTIONS.REMOVE:
                 return cards.filter(card => card.id !== action.payload.id)
             case ACTIONS.STAR:
@@ -53,6 +57,13 @@ export default function App() {
                     }
                     return card;
                 })
+            case ACTIONS.EDIT:
+                return cards.map(card => {
+                    if (card.id === action.payload.id) {
+                        return { ...card, finalized: false, p_title: card.title, p_body: card.body };
+                    }
+                    return card;
+                })
             default:
                 return cards;
         }
@@ -62,7 +73,7 @@ export default function App() {
         window.open(link, "_blank");
     };
 
-    function emptyCard() {
+    function emptyCard(level = 0, parent = null) {
         return {
             id: Date.now(),
             title: "",
@@ -70,10 +81,12 @@ export default function App() {
             score: 0,
             starred: false,
             finalized: false,
+            level: level,
         }
     }
 
     function showCards(cards) {
+        console.log(cards);
         return cards.map((card, index) => {
             return (
                 <Card
@@ -84,8 +97,6 @@ export default function App() {
             )
         })
     }
-
-    console.log(all_cards)
 
     return (
         <div className="bg-dark_accent w-screen h-screen flex flex-col justify-start items-center">
