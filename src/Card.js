@@ -32,7 +32,7 @@ export default function Card({ card, dispatch }) {
         if (titleRef && titleRef.current) {
             titleRef.current.style.height = "0px";
             const scrollHeight = titleRef.current.scrollHeight;
-            titleRef.current.style.height = `${scrollHeight + 3}px`;
+            titleRef.current.style.height = `${scrollHeight}px`;
         }
     }, [new_title])
     
@@ -40,12 +40,11 @@ export default function Card({ card, dispatch }) {
         if (bodyRef && bodyRef.current) {
             bodyRef.current.style.height = "0px";
             const scrollHeight = bodyRef.current.scrollHeight;
-            bodyRef.current.style.height = `${scrollHeight + 3}px`;
+            bodyRef.current.style.height = `${scrollHeight}px`;
         }
     }, [new_body])
     
-    function handleSubmit(e) {
-        e.preventDefault();
+    function handleSubmit() {
         if (new_title === "") {
             set_error("Please Enter a Title");
             setTimeout(() => {
@@ -66,7 +65,9 @@ export default function Card({ card, dispatch }) {
     }
 
     function cancelEdit() {
-
+        set_new_title("");
+        set_new_body("");
+        dispatch({ type: ACTIONS.REMOVE, payload: {id: id}} );
     }
 
     if (card.finalized) {
@@ -120,13 +121,12 @@ export default function Card({ card, dispatch }) {
     }
     else {
         return (
-            <form 
+            <div
                 className={`flex flex-col w-full h-fit min-h-1/3 rounded-2xl align-top overflow-hidden child:px-5 drop-shadow-lg ${error ? "shake" : ""}`}
-                onSubmit={ handleSubmit }
             >
                 <div className="bg-light h-fit w-full flex items-center gap-1 pt-5">
                     <div className="flex-grow font-sorabold text-2xl text-important bg-inherit h-fit">
-                        <textarea ref={ titleRef } value={ new_title } 
+                        <textarea ref={ titleRef } value={ new_title } rows="1"
                             placeholder="Give your Comment a Title..."
                             onChange={e => set_new_title(e.target.value)}
                             className="w-full max-w-full bg-inherit focus:outline-none resize-none font-sorabold"
@@ -143,27 +143,28 @@ export default function Card({ card, dispatch }) {
                     </button>
                     <button 
                         className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center self-start"
-                        onClick={() => dispatch({ type: ACTIONS.REMOVE, payload: {id: id}})}
+                        onClick={() => cancelEdit()}
                     >
                         <StyledX className="h-6 w-6" />
                     </button>
                 </div>
                 <div className="bg-light flex-grow h-fit py-4 font-sora text-primary text-sm">
-                    <textarea ref={ bodyRef } value={ new_body }
+                    <textarea ref={ bodyRef } value={ new_body } rows="1"
                         placeholder="Add a Comment..."
                         onChange={e => set_new_body(e.target.value) }
                         className="w-full bg-inherit focus:outline-none resize-none"
                     />
                 </div>
                 <div className={`${!error ? "bg-light_accent" : "danger-color" } h-8 flex items-center`}>
-                    <button type="submit" name="submit_button"
+                    <button onClick={ () => handleSubmit() }
                         className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center mr-2 underline px-2 py-0.5 font-sorabold"
                     >
                         Submit
                     </button>
-                    <button type="submit" name="cancel_button" value="Cancel"
+                    <button onClick={ () => cancelEdit() }
                         className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center mr-2 underline px-2 py-0.5 font-sorabold"
                     >
+                        Cancel
                     </button>
                     <div className="flex-grow flex">
                         <span className={`font-sorabold ${error ? "fade-text" : ""}`}> { error } </span>
@@ -182,7 +183,7 @@ export default function Card({ card, dispatch }) {
                         <ArrowDownShort className="h-6 w-6" />
                     </button>
                 </div>
-            </form>
+            </div>
         )
     }
 }
