@@ -29,4 +29,5 @@ export const test_card = {
     score: 0,
     starred: false,
     finalized: true,
+    children: [],
 }
