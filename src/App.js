@@ -124,7 +124,7 @@ export default function App() {
             <div className="bg-dark shadow-lg w-full h-24 px-5 flex flex-row items-center opacity-90">
                 <StyledIcon className="h-12 w-12 mr-5"/>
                 <div className="font-sorabold text-2xl tracking-widest font-bold grow text-light">
-                    Bookmarks
+                    Comments
                 </div>
                 <button onClick={() => goToLink("https://github.com/ehg11/comments")}>
                     <img src={surtr} alt="surtr" 
