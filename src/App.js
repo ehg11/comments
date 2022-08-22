@@ -1,7 +1,7 @@
 import surtr from "./assets/surtr-sq.png";
 import { TextParagraph, PlusLg } from "@styled-icons/bootstrap";
 import styled from 'styled-components';
-import { ACTIONS, test_card, colors } from './utils.js'
+import { ACTIONS, test_card, colors, getChildren } from './utils.js'
 import Card from "./Card.js"
 import { useReducer } from "react"
 
@@ -16,14 +16,6 @@ export default function App() {
 
     const [all_cards, dispatch] = useReducer(reducer, test_cards);
 
-    /*
-        Cards Structure:
-            Top Level Cards
-                Child Array with All Subcards (done recursively)
-            Copies of All Child Cards
-                Parent Array from Top Level to Lowest Level
-    */
-
     function reducer(cards, action) {
         // if there is a pending card, must finish the card before anything can be done
         if (![ACTIONS.SUBMIT, ACTIONS.REMOVE].includes(action.type) && cards.find(card => !card.finalized)) {
@@ -31,16 +23,9 @@ export default function App() {
         }
         switch(action.type) {
             case ACTIONS.SUBMIT: {
-                // find if the card has any parents on the top level -> means it is a child card, need to recursively find the card
-                let card = findCard(cards, action.payload.id);
-                // modify the card details from the payload
-                card.title = action.payload.title;
-                card.body = action.payload.body;
-                card.finalized = true;
                 return cards.map(card => {
-                    // if the card is a child, update it's top level copy
-                    if (card.child && card.id === action.payload.id) {
-                        return { ...card, finalized: true }
+                    if (card.id === action.payload.id) {
+                        return {...card, title: action.payload.title, body: action.payload.body, finalized: true}
                     }
                     return card;
                 })
@@ -50,17 +35,8 @@ export default function App() {
             }
             case ACTIONS.ADD_SUBCARD: {
                 let id = Date.now();
-                let new_cards = cards.map(card => {
-                    if (card.id === action.payload.id) {
-                        let children = [emptyCard(id), ...card.children];
-                        return {...card, children: children}
-                    }
-                    return card;
-                })
-                let parents = cards.find(card => card.id === action.payload.id).parents ?? [];
-                parents.push(action.payload.id);
-                new_cards.push({ id: id, child: true, parents: parents})
-                return new_cards;
+                let parent = cards.find(card => card.id === action.payload.id);
+                return [emptyCard(id, [...parent.parents, action.payload.id]), ...cards]
             }
             case ACTIONS.REMOVE: {
                 return cards.filter(card => card.id !== action.payload.id).filter(card => !card.parents?.includes(action.payload.id));
@@ -107,7 +83,7 @@ export default function App() {
         window.open(link, "_blank");
     };
 
-    function emptyCard(id = Date.now(), child = false,) {
+    function emptyCard(id = Date.now(), parents = [],) {
         return {
             id: id,
             title: "",
@@ -115,38 +91,23 @@ export default function App() {
             score: 0,
             starred: false,
             finalized: false,
-            child: false,
-            children: [],
+            parents: parents,
         }
     }
 
     function showCards(cards) {
         console.log(cards);
-        return cards.filter(card => !card.child).map((card, index) => {
+        return cards.filter(card => card.parents.length === 0).map((card, index) => {
+            console.log(getChildren(cards, card.id))
             return (
                 <Card
                     key={ index }
                     card={ card }
+                    children={ getChildren(cards, card.id) }
                     dispatch={ dispatch }
                 />
             )
         })
-    }
-
-    function findCard(cards, id) {
-        let parents = cards.find(card => card.id === id).parents ?? [];
-        return findCardHelper(cards, parents, id);
-    }
-
-    function findCardHelper(cards, remaining_parents, id) {
-        if (!cards.find(card => card.id === id).child) {
-            const card = cards.find(card => card.id === id);
-            return card;
-        }
-        const oldestID = remaining_parents[0];
-        const parent_card = cards.find(card => card.id === oldestID);
-        console.log(cards, parent_card);
-        return findCardHelper(parent_card.children, remaining_parents.slice(1), id);
     }
 
     return (

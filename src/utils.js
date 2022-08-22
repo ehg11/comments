@@ -29,5 +29,9 @@ export const test_card = {
     score: 0,
     starred: false,
     finalized: true,
-    children: [],
+    parents: [],
+}
+
+export function getChildren(cards, parentID) {
+    return cards.filter(card => card.parents?.includes(parentID));
 }

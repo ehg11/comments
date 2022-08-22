@@ -1,8 +1,9 @@
 import { X, Plus, ArrowUpShort, ArrowDownShort, Star, StarFill } from "@styled-icons/bootstrap";
 import { ModeEdit } from "@styled-icons/material"
 import styled from 'styled-components';
-import { ACTIONS, colors } from "./utils.js";
+import { ACTIONS, colors, getChildren } from "./utils.js";
 import { useState, useRef, useEffect } from "react";
+import Subcards from "./Subcards.js";
 
 const StyledX = styled(X)`
     &:hover {
@@ -14,13 +15,18 @@ const StyledStarFill = styled(StarFill)`
     color: ${colors.light_accent}
 `
 
-export default function Card({ card, dispatch }) {
+export default function Card({ card, children, card_level, dispatch }) {
     const id = card.id;
     const title = card.title ?? "";
     const body = card.body ?? "";
     const score = card.score ?? 0;
     const starred = card.starred ?? false;
-    const children = card.children ?? [];
+    const level = card_level ?? 1;
+    const direct_children = children.filter(card => card.parents.length === level);
+    const indirect_children = children.filter(card => card.parents.length !== level);
+    console.log("for card with id: ", id);
+    console.log("direct: ", direct_children)
+    console.log("all: ", children);
 
     const [new_title, set_new_title] = useState("");
     const [new_body, set_new_body] = useState(""); 
@@ -110,15 +116,11 @@ export default function Card({ card, dispatch }) {
         dispatch({ type: ACTIONS.REMOVE, payload: {id: id}} );
     }
 
-    // function levelBars() {
-    //     let bars = [];
-    //     for (let i = 0; i < level; i++) {
-    //         bars.push(
-    //             <div key={i} className="w-1 bg-dark_accent mr-3 hover:brightness-50 rounded-full drop-shadow-md"/>
-    //         )
-    //     }
-    //     return bars;
-    // }
+    function levelBars() {
+        if (level > 1) {
+            return <div className="w-1 bg-dark_accent mr-3 hover:brightness-50 rounded-full drop-shadow-md"/>;
+        }
+    }
 
     if (card.finalized) {
         return (
@@ -177,16 +179,13 @@ export default function Card({ card, dispatch }) {
                         </div>
                     </div>
                 </div>
-                {
-                    children.map((card, index) => {
-                        return (
-                            <Card
-                                key={ index }
-                                card={ card }
-                                dispatch={ dispatch }
-                            />
-                        )
-                    })
+                { direct_children.length > 0 &&
+                        <Subcards
+                            cards={ direct_children }
+                            children={ indirect_children }
+                            card_level={ level + 1 }
+                            dispatch={ dispatch }
+                        />
                 }
             </div>
         )
@@ -194,7 +193,6 @@ export default function Card({ card, dispatch }) {
     else {
         return (
             <div className="flex">
-                {/* {levelBars()} */}
                 <div
                     className={`flex flex-col w-full h-fit min-h-1/3 rounded-2xl align-top overflow-hidden child:px-5 drop-shadow-lg ${error ? "shake" : ""}`}
                 >
