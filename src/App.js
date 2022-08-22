@@ -74,6 +74,15 @@ export default function App() {
                     return card;
                 })
             }
+            case ACTIONS.TOGGLE_DISPLAY: {
+                console.log("called");
+                return cards.map(card => {
+                    if (card.id === action.payload.id) {
+                        return { ...card, display: action.payload.type }
+                    }
+                    return card;
+                })
+            }
             default:
                 return cards;
         }
@@ -91,14 +100,14 @@ export default function App() {
             score: 0,
             starred: false,
             finalized: false,
+            display: true,
             parents: parents,
         }
     }
 
     function showCards(cards) {
         console.log(cards);
-        return cards.filter(card => card.parents.length === 0).map((card, index) => {
-            console.log(getChildren(cards, card.id))
+        return cards.filter(card => card.parents.length === 0 && card.display).map((card, index) => {
             return (
                 <Card
                     key={ index }
@@ -123,8 +132,8 @@ export default function App() {
                     />
                 </button>
             </div>
-            <div className="w-full h-full flex justify-center items-top py-12 overflow-y-auto scroll">
-                <div className="bg-white w-11/12 min-h-full h-fit p-12 rounded-xl shadow-lg flex flex-col gap-8">
+            <div className="w-full h-full flex justify-center items-top py-12 overflow-y-scroll scroll">
+                <div className="bg-white w-11/12 max-w-11/12 min-h-full h-fit p-12 rounded-xl shadow-lg flex flex-col gap-8">
                     <button 
                         className="bg-light p-2 rounded-2xl drop-shadow-md border-2 border-light hover:border-light_accent h-12 flex items-center justify-center"
                         onClick={() => dispatch({ type: ACTIONS.ADD_NEWCARD })}

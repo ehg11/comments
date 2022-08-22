@@ -6,7 +6,8 @@ export const ACTIONS = {
     ADD_SUBCARD: "add-subcard",
     UPVOTE: "upvote",
     DOWNVOTE: "downvote",
-    EDIT: "edit"
+    EDIT: "edit",
+    TOGGLE_DISPLAY: "toggle-display",
 }
 
 export const colors = {
@@ -29,6 +30,7 @@ export const test_card = {
     score: 0,
     starred: false,
     finalized: true,
+    display: true,
     parents: [],
 }
 

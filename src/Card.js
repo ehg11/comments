@@ -1,7 +1,7 @@
 import { X, Plus, ArrowUpShort, ArrowDownShort, Star, StarFill } from "@styled-icons/bootstrap";
 import { ModeEdit } from "@styled-icons/material"
 import styled from 'styled-components';
-import { ACTIONS, colors, getChildren } from "./utils.js";
+import { ACTIONS, colors } from "./utils.js";
 import { useState, useRef, useEffect } from "react";
 import Subcards from "./Subcards.js";
 
@@ -24,9 +24,6 @@ export default function Card({ card, children, card_level, dispatch }) {
     const level = card_level ?? 1;
     const direct_children = children.filter(card => card.parents.length === level);
     const indirect_children = children.filter(card => card.parents.length !== level);
-    console.log("for card with id: ", id);
-    console.log("direct: ", direct_children)
-    console.log("all: ", children);
 
     const [new_title, set_new_title] = useState("");
     const [new_body, set_new_body] = useState(""); 
@@ -93,7 +90,6 @@ export default function Card({ card, children, card_level, dispatch }) {
     }
 
     function beginEdit() {
-        console.log("called");
         set_new_title(title);
         set_new_body(body);
         dispatch({ type: ACTIONS.EDIT, payload: { id: id }})
@@ -114,12 +110,6 @@ export default function Card({ card, children, card_level, dispatch }) {
         set_new_title("");
         set_new_body("");
         dispatch({ type: ACTIONS.REMOVE, payload: {id: id}} );
-    }
-
-    function levelBars() {
-        if (level > 1) {
-            return <div className="w-1 bg-dark_accent mr-3 hover:brightness-50 rounded-full drop-shadow-md"/>;
-        }
     }
 
     if (card.finalized) {
