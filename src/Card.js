@@ -179,7 +179,6 @@ export default function Card({ card, dispatch }) {
                 </div>
                 {
                     children.map((card, index) => {
-                        console.log("mapping ", card.id);
                         return (
                             <Card
                                 key={ index }

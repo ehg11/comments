@@ -16,34 +16,39 @@ export default function App() {
 
     const [all_cards, dispatch] = useReducer(reducer, test_cards);
 
+    /*
+        Cards Structure:
+            Top Level Cards
+                Child Array with All Subcards (done recursively)
+            Copies of All Child Cards
+                Parent Array from Top Level to Lowest Level
+    */
+
     function reducer(cards, action) {
+        // if there is a pending card, must finish the card before anything can be done
         if (![ACTIONS.SUBMIT, ACTIONS.REMOVE].includes(action.type) && cards.find(card => !card.finalized)) {
             return cards;
         }
         switch(action.type) {
-            case ACTIONS.SUBMIT:
-                if (cards.find(card => card.id === action.payload.id).child) {
-                    let parents = cards.find(card => card.id === action.payload.id).parents
-                    let child_card = findChild(cards, parents, action.payload.id);
-                    console.log(child_card);
-                    child_card.title = action.payload.title;
-                    child_card.body = action.payload.body;
-                    child_card.finalized = true;
-                }
+            case ACTIONS.SUBMIT: {
+                // find if the card has any parents on the top level -> means it is a child card, need to recursively find the card
+                let card = findCard(cards, action.payload.id);
+                // modify the card details from the payload
+                card.title = action.payload.title;
+                card.body = action.payload.body;
+                card.finalized = true;
                 return cards.map(card => {
-                    if (card.id === action.payload.id) {
-                        if (card.child) {
-                            return { ...card, finalized: true }
-                        }
-                        return { ...card, title: action.payload.title, body: action.payload.body, finalized: true };
+                    // if the card is a child, update it's top level copy
+                    if (card.child && card.id === action.payload.id) {
+                        return { ...card, finalized: true }
                     }
                     return card;
                 })
-            case ACTIONS.ADD_NEWCARD:
-                console.log("adding newcard");
+            }
+            case ACTIONS.ADD_NEWCARD: {
                 return [emptyCard(), ...cards]
-            case ACTIONS.ADD_SUBCARD:
-                console.log("adding subcard");
+            }
+            case ACTIONS.ADD_SUBCARD: {
                 let id = Date.now();
                 let new_cards = cards.map(card => {
                     if (card.id === action.payload.id) {
@@ -56,36 +61,43 @@ export default function App() {
                 parents.push(action.payload.id);
                 new_cards.push({ id: id, child: true, parents: parents})
                 return new_cards;
-            case ACTIONS.REMOVE:
+            }
+            case ACTIONS.REMOVE: {
                 return cards.filter(card => card.id !== action.payload.id).filter(card => !card.parents?.includes(action.payload.id));
-            case ACTIONS.STAR:
+            }
+            case ACTIONS.STAR: {
                 return cards.map(card => {
                     if (card.id === action.payload.id) {
+                        console.log(card);
                         return { ...card, starred: !card.starred};
                     }
                     return card;
                 })
-            case ACTIONS.UPVOTE:
+            }
+            case ACTIONS.UPVOTE: {
                 return cards.map(card => {
                     if (card.id === action.payload.id) {
                         return { ...card, score: card.score + 1};
                     }
                     return card;
                 })
-            case ACTIONS.DOWNVOTE:
+            }
+            case ACTIONS.DOWNVOTE: {
                 return cards.map(card => {
                     if (card.id === action.payload.id) {
                         return { ...card, score: card.score - 1};
                     }
                     return card;
                 })
-            case ACTIONS.EDIT:
+            }
+            case ACTIONS.EDIT: {
                 return cards.map(card => {
                     if (card.id === action.payload.id) {
                         return { ...card, finalized: false, p_title: card.title, p_body: card.body };
                     }
                     return card;
                 })
+            }
             default:
                 return cards;
         }
@@ -95,7 +107,7 @@ export default function App() {
         window.open(link, "_blank");
     };
 
-    function emptyCard(id = Date.now()) {
+    function emptyCard(id = Date.now(), child = false,) {
         return {
             id: id,
             title: "",
@@ -121,19 +133,20 @@ export default function App() {
         })
     }
 
-    function findChild(cards, remaining_parents, id) {
-        console.log("id: ", id);
-        console.log(cards.find(card => card.id === id));
-        console.log(cards.filter(card => !card.child).find(card => card.id === id));
+    function findCard(cards, id) {
+        let parents = cards.find(card => card.id === id).parents ?? [];
+        return findCardHelper(cards, parents, id);
+    }
+
+    function findCardHelper(cards, remaining_parents, id) {
         if (!cards.find(card => card.id === id).child) {
             const card = cards.find(card => card.id === id);
-            console.log(card);
             return card;
         }
         const oldestID = remaining_parents[0];
         const parent_card = cards.find(card => card.id === oldestID);
         console.log(cards, parent_card);
-        return findChild(parent_card.children, remaining_parents.slice(1), id);
+        return findCardHelper(parent_card.children, remaining_parents.slice(1), id);
     }
 
     return (
