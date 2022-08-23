@@ -15,13 +15,14 @@ const StyledStarFill = styled(StarFill)`
     color: ${colors.light_accent}
 `
 
-export default function Card({ card, children, card_level, dispatch }) {
+export default function Card({ card, children, card_level, card_siblings, dispatch }) {
     const id = card.id;
     const title = card.title ?? "";
     const body = card.body ?? "";
     const score = card.score ?? 0;
     const starred = card.starred ?? false;
     const level = card_level ?? 1;
+    const siblings = card_siblings ?? [];
     const direct_children = children.filter(card => card.parents.length === level);
     const indirect_children = children.filter(card => card.parents.length !== level);
 
@@ -50,7 +51,7 @@ export default function Card({ card, children, card_level, dispatch }) {
 
     useEffect(() => {
         if (!card.finalized) {
-            if (card.p_title && card.p_body) {
+            if (card.p_title) {
                 if (titleRef && titleRef.current) {
                     titleRef.current.style.height = "0px";
                     let scrollHeight = titleRef.current.scrollHeight;
@@ -70,20 +71,35 @@ export default function Card({ card, children, card_level, dispatch }) {
     }, [card.finalized, card.p_title, card.p_body])
     
     function handleSubmit() {
+        console.log(siblings);
         if (new_title === "") {
             set_error("Please Enter a Title");
             setTimeout(() => {
                 set_error("");
             }, 2000);
         }
-        else if (new_body === "") {
+        if (siblings.some(card => card.title === new_title)) {
+            set_error("Another Subcollection already has this Title");
+            setTimeout(() => {
+                set_error("");
+            }, 2000);
+        }
+        else if (!card.collection && new_body === "") {
             set_error("Please Enter a Comment");
             setTimeout(() => {
                 set_error("");
             }, 2000);
         }
         else {
-            dispatch({ type: ACTIONS.SUBMIT, payload: {id: id, title: new_title, body: new_body }})
+            if (!card.collection) {
+                dispatch({ type: ACTIONS.SUBMIT, payload: {id: id, title: new_title, body: new_body }})
+            }
+            else if (level > 1) {
+                dispatch({ type: ACTIONS.SUBMIT, payload: {id: id, title: new_title, body: new_body, display: false }})
+            }
+            else {
+                dispatch({ type: ACTIONS.SUBMIT, payload: {id: id, title: new_title, body: new_body, display: true }})
+            }
             set_new_title("");
             set_new_body("");
         }
@@ -91,15 +107,17 @@ export default function Card({ card, children, card_level, dispatch }) {
 
     function beginEdit() {
         set_new_title(title);
-        set_new_body(body);
+        if (!card.collection) {
+            set_new_body(body);
+        }
         dispatch({ type: ACTIONS.EDIT, payload: { id: id }})
     }
 
     function cancelEdit() {
         set_new_title("");
         set_new_body("");
-        if (card.p_title && card.p_body) {
-            dispatch({ type: ACTIONS.SUBMIT, payload: {id: id, title: card.p_title, body: card.p_body }});
+        if (card.p_title) {
+            dispatch({ type: ACTIONS.SUBMIT, payload: {id: id, title: card.p_title, body: card.p_body, display: true, cancel: true }});
         }
         else {
             dispatch({ type: ACTIONS.REMOVE, payload: {id: id}} );
@@ -110,6 +128,26 @@ export default function Card({ card, children, card_level, dispatch }) {
         set_new_title("");
         set_new_body("");
         dispatch({ type: ACTIONS.REMOVE, payload: {id: id}} );
+    }
+
+    function showSubcollection(title) {
+        indirect_children.forEach(card => dispatch({ type: ACTIONS.TOGGLE_DISPLAY, payload: { id: card.id, type: false}}));
+        direct_children.filter(card => card.title !== title).forEach(card => dispatch({ type: ACTIONS.TOGGLE_DISPLAY, payload: { id: card.id, type: false}}));
+        dispatch({ type: ACTIONS.TOGGLE_DISPLAY, payload: { id: direct_children.find(card => card.title === title).id, type: true}});
+    }
+
+    function collectionButtons(collection) {
+        return (
+            <div className="bg-light flex-grow h-fit py-4 flex flex-col items-start">
+                {collection && collection.map((ele, index) => {
+                    return (
+                        <button key={ index } className="font-sora text-primary text-sm hover:brightness-50 hover:underline" onClick={ () => showSubcollection(ele) }>
+                            { ele }
+                        </button>
+                    )  
+                })}
+            </div>
+        )
     }
 
     if (card.finalized) {
@@ -136,9 +174,12 @@ export default function Card({ card, children, card_level, dispatch }) {
                                 <StyledX className="h-6 w-6" />
                             </button>
                         </div>
-                        <div className="bg-light flex-grow h-fit py-4 font-sora text-primary text-sm">
-                            {body}
-                        </div>
+                        { !card.collection 
+                            ? <div className="bg-light flex-grow h-fit py-4 font-sora text-primary text-sm">
+                                { body }
+                            </div>
+                            : collectionButtons(body)
+                        }
                         <div className="bg-light_accent h-8 flex items-center">
                             <button 
                                 className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center mr-2"
@@ -188,7 +229,7 @@ export default function Card({ card, children, card_level, dispatch }) {
                 >
                     <div className="bg-light h-fit w-full flex items-center gap-1 pt-5">
                         <textarea ref={ titleRef } value={ new_title } rows="1"
-                                placeholder="Give your Comment a Title..."
+                                placeholder={`Give your ${!card.collection ? "Card" : "Collection"} a Title...`}
                                 onChange={e => set_new_title(e.target.value)}
                                 className="flex-grow text-2xl w-full text-important max-w-full bg-inherit focus:outline-none resize-none font-sorabold"
                             />
@@ -208,11 +249,14 @@ export default function Card({ card, children, card_level, dispatch }) {
                             <StyledX className="h-6 w-6" />
                         </button>
                     </div>
-                    <textarea ref={ bodyRef } value={ new_body } rows="1"
-                        placeholder="Add a Comment..."
-                        onChange={e => set_new_body(e.target.value) }
-                        className="w-full h-fit bg-light focus:outline-none resize-none flex-grow py-4 font-sora text-primary text-sm"
-                    />
+                    { !card.collection  
+                        ? <textarea ref={ bodyRef } value={ new_body } rows="1"
+                            placeholder="Add a Comment..."
+                            onChange={e => set_new_body(e.target.value) }
+                            className="w-full h-fit bg-light focus:outline-none resize-none flex-grow py-4 font-sora text-primary text-sm"
+                        />
+                        : collectionButtons(body)
+                    }
                     <div className={`${!error ? "bg-light_accent" : "danger-color" } h-8 flex items-center`}>
                         <button onClick={ () => handleSubmit() }
                             className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center mr-2 underline px-2 py-0.5 font-sorabold"

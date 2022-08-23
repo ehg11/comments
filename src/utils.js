@@ -8,6 +8,7 @@ export const ACTIONS = {
     DOWNVOTE: "downvote",
     EDIT: "edit",
     TOGGLE_DISPLAY: "toggle-display",
+    ADD_NEWCOLLECTION: "add-newcollection",
 }
 
 export const colors = {
@@ -32,6 +33,7 @@ export const test_card = {
     finalized: true,
     display: true,
     parents: [],
+    collection: false,
 }
 
 export function getChildren(cards, parentID) {

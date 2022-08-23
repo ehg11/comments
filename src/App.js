@@ -1,5 +1,5 @@
 import surtr from "./assets/surtr-sq.png";
-import { TextParagraph, PlusLg } from "@styled-icons/bootstrap";
+import { TextParagraph, FileEarmarkPlus, JournalPlus } from "@styled-icons/bootstrap";
 import styled from 'styled-components';
 import { ACTIONS, test_card, colors, getChildren } from './utils.js'
 import Card from "./Card.js"
@@ -23,9 +23,31 @@ export default function App() {
         }
         switch(action.type) {
             case ACTIONS.SUBMIT: {
+                let parentID = cards.find(card => card.id === action.payload.id).parents.at(-1);
+                let prev_title = cards.find(card => card.id === action.payload.id).p_title;
                 return cards.map(card => {
                     if (card.id === action.payload.id) {
+                        if (card.collection) {
+                            return {...card, title: action.payload.title, display: action.payload.display, finalized: true}
+                        }
                         return {...card, title: action.payload.title, body: action.payload.body, finalized: true}
+                    }
+                    if (parentID && card.id === parentID) {
+                        if (card.collection) {
+                            if (!action.payload.cancel) {
+                                console.log(prev_title);
+                                console.log(card.body);
+                                if (prev_title && action.payload.title !== prev_title) {
+                                    let body = [...card.body];
+                                    console.log(body);
+                                    let index = body.findIndex(e => e === prev_title);
+                                    body[index] = action.payload.title;
+                                    return {...card, body: body}
+                                }
+                                let body = [action.payload.title, ...card.body];
+                                return {...card, body: body}
+                            }
+                        }
                     }
                     return card;
                 })
@@ -36,7 +58,10 @@ export default function App() {
             case ACTIONS.ADD_SUBCARD: {
                 let id = Date.now();
                 let parent = cards.find(card => card.id === action.payload.id);
-                return [emptyCard(id, [...parent.parents, action.payload.id]), ...cards]
+                if (!parent.collection) {
+                    return [emptyCard(id, [...parent.parents, action.payload.id]), ...cards]
+                }
+                return [emptyCard(id, [...parent.parents, action.payload.id], true), ...cards]
             }
             case ACTIONS.REMOVE: {
                 return cards.filter(card => card.id !== action.payload.id).filter(card => !card.parents?.includes(action.payload.id));
@@ -44,7 +69,6 @@ export default function App() {
             case ACTIONS.STAR: {
                 return cards.map(card => {
                     if (card.id === action.payload.id) {
-                        console.log(card);
                         return { ...card, starred: !card.starred};
                     }
                     return card;
@@ -75,13 +99,15 @@ export default function App() {
                 })
             }
             case ACTIONS.TOGGLE_DISPLAY: {
-                console.log("called");
                 return cards.map(card => {
                     if (card.id === action.payload.id) {
                         return { ...card, display: action.payload.type }
                     }
                     return card;
                 })
+            }
+            case ACTIONS.ADD_NEWCOLLECTION: {
+                return [emptyCard(undefined, undefined, true), ...cards];
             }
             default:
                 return cards;
@@ -92,7 +118,7 @@ export default function App() {
         window.open(link, "_blank");
     };
 
-    function emptyCard(id = Date.now(), parents = [],) {
+    function emptyCard(id = Date.now(), parents = [], collection = false) {
         return {
             id: id,
             title: "",
@@ -102,6 +128,7 @@ export default function App() {
             finalized: false,
             display: true,
             parents: parents,
+            collection: collection,
         }
     }
 
@@ -133,13 +160,21 @@ export default function App() {
                 </button>
             </div>
             <div className="w-full h-full flex justify-center items-top py-12 overflow-y-scroll scroll">
-                <div className="bg-white w-11/12 max-w-11/12 min-h-full h-fit p-12 rounded-xl shadow-lg flex flex-col gap-8">
-                    <button 
-                        className="bg-light p-2 rounded-2xl drop-shadow-md border-2 border-light hover:border-light_accent h-12 flex items-center justify-center"
-                        onClick={() => dispatch({ type: ACTIONS.ADD_NEWCARD })}
-                    >
-                        <PlusLg className="h-6"/>
-                    </button>
+                <div className="bg-white w-11/12 max-w-11/12 min-h-full h-fit p-12 rounded-xl shadow-lg flex flex-col gap-6">
+                    <div className="flex gap-4">
+                        <button 
+                            className="bg-light p-2 rounded-2xl drop-shadow-md border-2 border-light hover:border-light_accent h-12 flex items-center justify-center flex-grow"
+                            onClick={() => dispatch({ type: ACTIONS.ADD_NEWCARD })}
+                        >
+                            <FileEarmarkPlus className="h-6"/>
+                        </button>
+                        <button 
+                            className="bg-light p-2 rounded-2xl drop-shadow-md border-2 border-light hover:border-light_accent h-12 flex items-center justify-center flex-grow"
+                            onClick={() => dispatch({ type: ACTIONS.ADD_NEWCOLLECTION })}
+                        >
+                            <JournalPlus className="h-6"/>
+                        </button>
+                    </div>
                     {showCards(all_cards)}
                 </div>
             </div>
