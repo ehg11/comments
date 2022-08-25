@@ -1,13 +1,26 @@
-import surtr from "./assets/surtr-sq.png";
-import { TextParagraph, FileEarmarkPlus, JournalPlus } from "@styled-icons/bootstrap";
+import { TextParagraph, FileEarmarkPlus, JournalPlus, Github, X } from "@styled-icons/bootstrap";
+import { UserCircle} from "@styled-icons/boxicons-solid";
 import styled from 'styled-components';
-import { ACTIONS, test_card, colors, getChildren } from './utils.js'
-import Card from "./Card.js"
-import { useReducer } from "react"
-
+import { ACTIONS, test_card, colors, getChildren } from './utils.js';
+import Card from "./Card.js";
+import { useReducer, useState } from "react";
 
 const StyledIcon = styled(TextParagraph)`
     color: ${colors.light};
+`
+
+const StyledGithub = styled(Github)`
+    color: ${colors.light};
+`
+
+const StyledUser = styled(UserCircle)`
+    color: ${colors.light};
+`
+
+const StyledX = styled(X)`
+    &:hover {
+        color: ${colors.danger};
+    } 
 `
 
 export default function App() {
@@ -15,6 +28,8 @@ export default function App() {
     const test_cards = [test_card]
 
     const [all_cards, dispatch] = useReducer(reducer, test_cards);
+    const [login, set_login] = useState(false);
+    const [login_warning, set_login_warning] = useState(true);
 
     function reducer(cards, action) {
         // if there is a pending card, must finish the card before anything can be done
@@ -153,14 +168,31 @@ export default function App() {
                 <div className="font-sorabold text-2xl tracking-widest font-bold grow text-light">
                     Comments
                 </div>
+                <button onClick={() => set_login(!login)}>
+                    <StyledUser className="w-12 h-12 hover:brightness-90 shadow-xl mx-4 rounded-full"/>
+                </button>
                 <button onClick={() => goToLink("https://github.com/ehg11/comments")}>
-                    <img src={surtr} alt="surtr" 
-                        className="w-12 h-12 rounded-full items-end hover:brightness-90 shadow-xl mx-4" 
-                    />
+                    <StyledGithub className="w-10 h-10 hover:brightness-90 shadow-xl mx-4 rounded-full"/>
                 </button>
             </div>
             <div className="w-full h-full flex justify-center items-top py-12 overflow-y-scroll scroll">
                 <div className="bg-white w-11/12 max-w-11/12 min-h-full h-fit p-12 rounded-xl shadow-lg flex flex-col gap-6">
+                    { !login && login_warning 
+                        ? <div className="bg-danger w-full h-10 rounded-2xl p-2 flex items-center justify-center bg-opacity-50">
+                            <div className="flex-grow font-sora">
+                                Comments will not be saved without an Account. Click  
+                                <span className="font-sorabold underline px-1.5 hover:text-danger">here</span>
+                                 to make an account.
+                            </div>
+                            <button className="flex items-center" onClick={ () => set_login_warning(false)}>
+                                <StyledX className="h-6 w-6"/>
+                            </button>
+                        </div>
+                        : null
+                    }
+                    <div className="bg-slate-300 h-2 w-full">
+                        susy
+                    </div>
                     <div className="flex gap-4">
                         <button 
                             className="bg-light p-2 rounded-2xl drop-shadow-md border-2 border-light hover:border-light_accent h-12 flex items-center justify-center flex-grow"
