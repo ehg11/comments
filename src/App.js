@@ -1,9 +1,11 @@
-import { TextParagraph, FileEarmarkPlus, JournalPlus, Github, X } from "@styled-icons/bootstrap";
+import { TextParagraph, FileEarmarkPlus, JournalPlus, Github, X, Google } from "@styled-icons/bootstrap";
 import { UserCircle} from "@styled-icons/boxicons-solid";
 import styled from 'styled-components';
-import { ACTIONS, test_card, colors, getChildren } from './utils.js';
+import { ACTIONS, PAGES, test_card, colors, getChildren } from './utils.js';
 import Card from "./Card.js";
-import { useReducer, useState } from "react";
+import { useReducer, useState, useEffect } from "react";
+import { auth, googleSignIn, logout } from "./firebase.js";
+import { onAuthStateChanged } from "firebase/auth";
 
 const StyledIcon = styled(TextParagraph)`
     color: ${colors.light};
@@ -13,8 +15,12 @@ const StyledGithub = styled(Github)`
     color: ${colors.light};
 `
 
-const StyledUser = styled(UserCircle)`
+const StyledUserLight = styled(UserCircle)`
     color: ${colors.light};
+`
+
+const StyledUserDark = styled(UserCircle)`
+    color: ${colors.dark};
 `
 
 const StyledX = styled(X)`
@@ -23,13 +29,40 @@ const StyledX = styled(X)`
     } 
 `
 
+const StyledGoogle = styled(Google)`
+    color: ${colors.light}
+`
+
 export default function App() {
 
     const test_cards = [test_card]
 
     const [all_cards, dispatch] = useReducer(reducer, test_cards);
-    const [login, set_login] = useState(false);
     const [login_warning, set_login_warning] = useState(true);
+    const [transition, set_transition] = useState(false);
+    const [login_page, show_login_page] = useState(false);
+    const [user, set_user] = useState(null);
+    
+    useEffect(() => {
+        onAuthStateChanged(auth, (u) => {
+            if (user === u) {
+                return;
+            }
+            if (u) {
+                console.log(u);
+                if (user !== u) {
+                    set_user(u);
+                    show_login_page(false);
+                }
+            }
+            else {
+                console.log("no user");
+                if (user) {
+                    set_user(null);
+                }
+            }
+        })
+    }, [])
 
     function reducer(cards, action) {
         // if there is a pending card, must finish the card before anything can be done
@@ -161,6 +194,67 @@ export default function App() {
         })
     }
 
+    function showPage(page) {
+        switch (page) {
+            case PAGES.CARDS: {
+                return (
+                    <div className="flex flex-col gap-6">
+                        { !user && login_warning 
+                            ? <div className="bg-danger w-full min-h-10 h-fit rounded-2xl p-2 flex items-center justify-center bg-opacity-50">
+                                <div className="flex-grow font-sora">
+                                    Comments will not be saved without an Account. Click  
+                                    <span className="font-sorabold underline px-1.5 hover:text-danger">here</span>
+                                    to make an account.
+                                </div>
+                                <button className="flex items-center" onClick={ () => set_login_warning(false)}>
+                                    <StyledX className="h-6 w-6"/>
+                                </button>
+                            </div>
+                            : null
+                        }
+                        <button className={`bg-slate-300 h-10 w-full transition-size ease-in-out duration-500 ${transition && "w-20 h-20"}`} 
+                            onClick={() => set_transition(!transition)}
+                        >
+                            susy
+                        </button>
+                        <div className="flex gap-4">
+                            <button 
+                                className="bg-light p-2 rounded-2xl drop-shadow-md border-2 border-light hover:border-light_accent h-12 flex items-center justify-center flex-grow"
+                                onClick={() => dispatch({ type: ACTIONS.ADD_NEWCARD })}
+                            >
+                                <FileEarmarkPlus className="h-6"/>
+                            </button>
+                            <button 
+                                className="bg-light p-2 rounded-2xl drop-shadow-md border-2 border-light hover:border-light_accent h-12 flex items-center justify-center flex-grow"
+                                onClick={() => dispatch({ type: ACTIONS.ADD_NEWCOLLECTION })}
+                            >
+                                <JournalPlus className="h-6"/>
+                            </button>
+                        </div>
+                        {showCards(all_cards)}
+                    </div>
+                )
+            }
+            case PAGES.LOGIN: {
+                return (
+                    <div className="flex flex-col gap-4 justify-center items-center">
+                        <StyledUserDark className="h-28 w-28 my-4 drop-shadow-lg" />
+                        <button onClick={() => googleSignIn()}
+                            className="h-24 min-h-fit w-full my-4 flex items-center justify-center bg-light_accent p-4 rounded-full border-2 border-light_accent hover:brightness-75
+                                hover:border-dark drop-shadow-lg">
+                            <StyledGoogle className="h-2/3" />
+                            <div className="m-4 font-sorabold text-light text-2xl">
+                                Sign in With Google
+                            </div>
+                        </button>
+                    </div>
+                )
+            }
+            default:
+                return;
+        }
+    }
+
     return (
         <div className="bg-dark_accent w-screen h-screen flex flex-col justify-start items-center">
             <div className="bg-dark shadow-lg w-full h-24 px-5 flex flex-row items-center opacity-90">
@@ -168,46 +262,22 @@ export default function App() {
                 <div className="font-sorabold text-2xl tracking-widest font-bold grow text-light">
                     Comments
                 </div>
-                <button onClick={() => set_login(!login)}>
-                    <StyledUser className="w-12 h-12 hover:brightness-90 shadow-xl mx-4 rounded-full"/>
+                <button onClick={() => show_login_page(!login_page)}>
+                    <StyledUserLight className="w-12 h-12 hover:brightness-90 shadow-xl mx-4 rounded-full"/>
                 </button>
                 <button onClick={() => goToLink("https://github.com/ehg11/comments")}>
                     <StyledGithub className="w-10 h-10 hover:brightness-90 shadow-xl mx-4 rounded-full"/>
                 </button>
+                { user && 
+                    <button onClick={() => logout()} className="font-sorabold text-light hover:bg-dark_accent rounded-full text-md p-4">
+                        Logout
+                    </button>
+                }
             </div>
             <div className="w-full h-full flex justify-center items-top py-12 overflow-y-scroll scroll">
-                <div className="bg-white w-11/12 max-w-11/12 min-h-full h-fit p-12 rounded-xl shadow-lg flex flex-col gap-6">
-                    { !login && login_warning 
-                        ? <div className="bg-danger w-full h-10 rounded-2xl p-2 flex items-center justify-center bg-opacity-50">
-                            <div className="flex-grow font-sora">
-                                Comments will not be saved without an Account. Click  
-                                <span className="font-sorabold underline px-1.5 hover:text-danger">here</span>
-                                 to make an account.
-                            </div>
-                            <button className="flex items-center" onClick={ () => set_login_warning(false)}>
-                                <StyledX className="h-6 w-6"/>
-                            </button>
-                        </div>
-                        : null
-                    }
-                    <div className="bg-slate-300 h-2 w-full">
-                        susy
-                    </div>
-                    <div className="flex gap-4">
-                        <button 
-                            className="bg-light p-2 rounded-2xl drop-shadow-md border-2 border-light hover:border-light_accent h-12 flex items-center justify-center flex-grow"
-                            onClick={() => dispatch({ type: ACTIONS.ADD_NEWCARD })}
-                        >
-                            <FileEarmarkPlus className="h-6"/>
-                        </button>
-                        <button 
-                            className="bg-light p-2 rounded-2xl drop-shadow-md border-2 border-light hover:border-light_accent h-12 flex items-center justify-center flex-grow"
-                            onClick={() => dispatch({ type: ACTIONS.ADD_NEWCOLLECTION })}
-                        >
-                            <JournalPlus className="h-6"/>
-                        </button>
-                    </div>
-                    {showCards(all_cards)}
+                <div className={`bg-white w-11/12 max-w-11/12 min-h-full h-fit p-12 rounded-xl shadow-lg flex flex-col gap-6 transition-size ease-in-out duration-500 ${login_page && "w-1/3 min-h-fit"}`}
+                >
+                    { !login_page ? showPage(PAGES.CARDS) : showPage(PAGES.LOGIN) }
                 </div>
             </div>
         </div>

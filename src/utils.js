@@ -11,6 +11,12 @@ export const ACTIONS = {
     ADD_NEWCOLLECTION: "add-newcollection",
 }
 
+export const PAGES = {
+    CARDS: "cards",
+    LOGIN: "login",
+    PREFS: "prefs",
+}
+
 export const colors = {
     light: '#F6F6F7',
     light_accent: '#61AFA9',

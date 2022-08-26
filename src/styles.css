@@ -71,3 +71,16 @@
         opacity: 0;
     }
 }
+
+.fade-in-card {
+    animation: fade-in-card 1s ease-in-out 1s 1;
+}
+
+@keyframes fade-in-card {
+    0%, 50% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
