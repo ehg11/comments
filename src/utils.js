@@ -1,4 +1,5 @@
 export const ACTIONS = {
+    INIT: "init",
     SUBMIT: "submit",
     ADD_NEWCARD: "add-newcard",
     REMOVE: "remove",

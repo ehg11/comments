@@ -2,7 +2,7 @@
 import { ENV } from "./env.js"
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
-import { getFirestore, query, getDocs, collection, where, addDoc} from "firebase/firestore"
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore"
 
 const firebaseConfig = {
   apiKey: ENV.FIREBASE_API_KEY,
@@ -22,17 +22,7 @@ const googleProvider = new GoogleAuthProvider();
 
 export async function googleSignIn() {
     try {
-        const user = await signInWithPopup(auth, googleProvider).user;
-        const q = query(collection(db, "users"), where("uid", "==", user?.uid));
-        const docs = await getDocs(q);
-        if (docs.docs.length === 0) {
-            await addDoc(collection(db, "users"), {
-                uid: user.uid,
-                name: user.displayName,
-                authProvider: "google",
-                email: user.email
-            });
-        }
+        await signInWithPopup(auth, googleProvider).user;
         return true;
     } 
     catch (error) {
@@ -43,4 +33,30 @@ export async function googleSignIn() {
 
 export function logout() {
     signOut(auth);
+}
+
+export async function pushCards(cards) {
+    console.log(auth.currentUser);
+    const uid = auth?.currentUser?.uid;
+    if (!uid) {
+        return;
+    }
+    try {
+        await setDoc(doc(db, "cards", uid), {cards: cards});
+    }
+    catch (error) {
+        console.log(error);
+    }
+}
+
+export async function pullCards(uid) {
+    const cardSnapshot = await getDoc(doc(db, "cards", uid));
+    if (cardSnapshot.exists()) {
+        console.log(cardSnapshot.data());
+        return cardSnapshot.data().cards;
+    }
+    else {
+        console.log("no data");
+        return null;
+    }
 }
