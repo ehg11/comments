@@ -45,7 +45,7 @@ export default function App() {
     
     useEffect(() => {
         onAuthStateChanged(auth, (u) => {
-            if (user === u) {
+            if (user === u || (!user && !u)) {
                 return;
             }
             if (u) {
@@ -62,7 +62,7 @@ export default function App() {
                 }
             }
         })
-    }, [])
+    }, [user])
 
     function reducer(cards, action) {
         // if there is a pending card, must finish the card before anything can be done
@@ -263,7 +263,11 @@ export default function App() {
                     Comments
                 </div>
                 <button onClick={() => show_login_page(!login_page)}>
-                    <StyledUserLight className="w-12 h-12 hover:brightness-90 shadow-xl mx-4 rounded-full"/>
+                    { !user 
+                        ? <StyledUserLight className="w-12 h-12 hover:brightness-90 shadow-xl mx-4 rounded-full"/>
+                        : <img src={user.photoURL} alt={"Profile"} className="w-12 h-12 hover:brightness-90 shadow-xl mx-4 rounded-full"/>
+                    }
+                    
                 </button>
                 <button onClick={() => goToLink("https://github.com/ehg11/comments")}>
                     <StyledGithub className="w-10 h-10 hover:brightness-90 shadow-xl mx-4 rounded-full"/>
