@@ -1,9 +1,10 @@
-import { X, Plus, ArrowUpShort, ArrowDownShort, Star, StarFill } from "@styled-icons/bootstrap";
+import { X, Plus, ArrowUpShort, ArrowDownShort, Star, StarFill, PaintBucket } from "@styled-icons/bootstrap";
 import { ModeEdit } from "@styled-icons/material"
 import styled from 'styled-components';
 import { ACTIONS, colors } from "./utils.js";
 import { useState, useRef, useEffect } from "react";
 import Subcards from "./Subcards.js";
+import MenuButton from "./MenuButton.js";
 
 const StyledX = styled(X)`
     &:hover {
@@ -30,8 +31,13 @@ export default function Card({ card, children, card_level, card_siblings, dispat
     const [new_body, set_new_body] = useState(""); 
     const [error, set_error] = useState("");
 
+    const [r, set_r] = useState(0);
+    const [g, set_g] = useState(90);
+    const [b, set_b] = useState(0);
+
     const titleRef = useRef(null);
     const bodyRef = useRef(null);
+    const colorRef = useRef(null);
 
     useEffect(() => {
         if (titleRef && titleRef.current) {
@@ -150,13 +156,40 @@ export default function Card({ card, children, card_level, card_siblings, dispat
         )
     }
 
+    function colorMenu() {
+        return (
+            <div className="absolute -translate-y-3/4 -translate-x-3/4 w-fit min-h-fit bg-white p-3 drop-shadow-lg rounded-xl">
+                <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                        <span className="font-sorabold text-red-500 w-6">R</span>
+                        <span className="font-mono w-6">{r}</span>
+                        <input type="range" min="0" max="255" defaultValue={r} onChange={e => set_r(e.target.value)}/>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="font-sorabold text-green-500 w-6">G</span>
+                        <span className="font-mono w-6">{g}</span>
+                        <input type="range" min="0" max="255" defaultValue={g} onChange={e => set_g(e.target.value)}/>
+                    </div>
+                    <div className="flex gap-2">
+                        <span className="font-sorabold text-blue-500 w-6">B</span>
+                        <span className="font-mono w-6">{b}</span>
+                        <input type="range" min="0" max="255" defaultValue={b} onChange={e => set_b(e.target.value)}/>
+                    </div>
+                    <div className="flex justify-items-end">
+
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     if (card.finalized) {
         return (
-            <div className="flex flex-col gap-1">
+            <div className="relative flex flex-col gap-1">
                 <div className="flex">
                     {/* {levelBars()} */}
-                    <div className="flex flex-col w-full h-fit min-h-1/3 rounded-2xl align-top overflow-hidden child:px-5 drop-shadow-lg">
-                        <div className="bg-light h-fit min-h-16 w-full flex items-center gap-1 pt-5">
+                    <div className="flex flex-col w-full h-fit min-h-1/3 align-top child:px-5 drop-shadow-lg">
+                        <div className="bg-light h-fit min-h-16 w-full flex items-center gap-1 pt-5 rounded-t-2xl">
                             <span className="flex-grow font-sorabold text-2xl text-important mr-1"> {title} </span>
                             <button 
                                 className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center self-start"
@@ -180,7 +213,7 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                             </div>
                             : collectionButtons(body)
                         }
-                        <div className="bg-light_accent h-8 flex items-center">
+                        <div className="bg-light_accent h-8 flex items-center rounded-b-2xl">
                             <button 
                                 className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center mr-2"
                                 onClick={() => dispatch({ type: ACTIONS.ADD_SUBCARD, payload: {id: id }})}
@@ -194,6 +227,10 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                                 <ModeEdit className="h-6 w-6 p-1" />
                             </button>
                             <span className="flex-grow" />
+                            <MenuButton
+                                display_icon={(<PaintBucket className="h-6 w-6 p-1 mx-3"/>)}
+                                menu_contents={colorMenu()}
+                            />
                             <span className="font-mono px-2"> {score} </span>
                             <button 
                                 className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center"

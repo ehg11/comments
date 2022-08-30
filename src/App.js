@@ -54,7 +54,7 @@ export default function App() {
     useEffect(() => {
         const pull = async (user) => {
             const cards = await pullCards(user?.uid);
-            dispatch({ type: ACTIONS.INIT, payload: { cards: cards }});
+            dispatch({ type: ACTIONS.INIT, payload: { cards: cards ?? [] }});
             set_pulled(!!cards);
         }
         onAuthStateChanged(auth, (u) => {
@@ -65,15 +65,14 @@ export default function App() {
                 console.log(u);
                 if (user !== u) {
                     set_user(u);
-                    pull(u).then(() => console.log("finished pulling"));
+                    pull(u);
                     show_login_page(false);
                 }
             }
             else {
-                console.log("no user");
+                // console.log("no user");
                 if (user) {
                     set_user(null);
-                    console.log("resetting cards");
                     dispatch({ type: ACTIONS.INIT, payload: { cards: [] }});
                 }
             }
@@ -81,11 +80,9 @@ export default function App() {
     }, [user])
 
     useEffect(() => {
-        if (!pulled) {
-            console.log("still pulling")
+        if (!pulled || all_cards.some(card => !card.finalized)) {
             return;
         }
-        console.log("pushing");
         pushCards(all_cards);
     }, [all_cards, pulled])
 
@@ -211,6 +208,13 @@ export default function App() {
 
     function showCards(cards) {
         console.log(cards);
+        if (cards.length === 0) {
+            return (
+                <div className="flex grow items-center justify-center text-primary font-sora m-6">
+                    No Comments to Show
+                </div>
+            )
+        }
         return cards.filter(card => card.parents.length === 0 && card.display).map((card, index) => {
             return (
                 <Card
