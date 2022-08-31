@@ -1,7 +1,7 @@
-import { X, Plus, ArrowUpShort, ArrowDownShort, Star, StarFill, PaintBucket } from "@styled-icons/bootstrap";
+import { X, Plus, ArrowUpShort, ArrowDownShort, Star, StarFill, PaintBucket, Check2 } from "@styled-icons/bootstrap";
 import { ModeEdit } from "@styled-icons/material"
 import styled from 'styled-components';
-import { ACTIONS, colors } from "./utils.js";
+import { ACTIONS, colors, colors2hex } from "./utils.js";
 import { useState, useRef, useEffect } from "react";
 import Subcards from "./Subcards.js";
 import MenuButton from "./MenuButton.js";
@@ -10,6 +10,12 @@ const StyledX = styled(X)`
     &:hover {
         color: ${colors.danger};
     } 
+`
+
+const StyledCheck = styled(Check2)`
+    &:hover {
+        color: ${colors.success};
+    }
 `
 
 const StyledStarFill = styled(StarFill)`
@@ -32,7 +38,7 @@ export default function Card({ card, children, card_level, card_siblings, dispat
     const [error, set_error] = useState("");
 
     const [r, set_r] = useState(0);
-    const [g, set_g] = useState(90);
+    const [g, set_g] = useState(0);
     const [b, set_b] = useState(0);
 
     const titleRef = useRef(null);
@@ -54,6 +60,14 @@ export default function Card({ card, children, card_level, card_siblings, dispat
             bodyRef.current.style.height = `${scrollHeight}px`;
         }
     }, [new_body])
+
+    useEffect(() => {
+        if (colorRef && colorRef.current) {
+            console.log("thing");
+            console.log(colors2hex(r, g, b));
+            colorRef.current.style.backgroundColor = `#${colors2hex(r, g, b)}`;
+        }
+    }, [r, g, b])
 
     useEffect(() => {
         if (!card.finalized) {
@@ -175,8 +189,11 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                         <span className="font-mono w-6">{b}</span>
                         <input type="range" min="0" max="255" defaultValue={b} onChange={e => set_b(e.target.value)}/>
                     </div>
-                    <div className="flex justify-items-end">
-
+                    <div className="flex gap-2 items-center">
+                        <div className="h-4 w-4 rounded-full ring-1 ring-primary" ref={ colorRef }/>
+                        <div className="grow" />
+                        <StyledX className="h-6 w-6"/>
+                        <StyledCheck className="h-5 w-5"/>
                     </div>
                 </div>
             </div>

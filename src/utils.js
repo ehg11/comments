@@ -46,3 +46,18 @@ export const test_card = {
 export function getChildren(cards, parentID) {
     return cards.filter(card => card.parents?.includes(parentID));
 }
+
+export function colors2hex(r, g, b) {
+    const hex = "0123456789abcdef";
+    let colors = [r, g, b];
+    colors.forEach((color, index) => {
+        const tens = Math.floor(color / 16);
+        const ones = color % 16;
+        colors[index] = `${hex[tens]}${hex[ones]}`;
+    })
+    return colors.join("");
+}
+
+export function hex2colors(hex) {
+    return [hex.slice(0, 2), hex.slice(2, 4), hex.slice(4)];
+}
