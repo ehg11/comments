@@ -36,7 +36,6 @@ export function logout() {
 }
 
 export async function pushCards(cards) {
-    console.log(auth.currentUser);
     const uid = auth?.currentUser?.uid;
     if (!uid) {
         return;
@@ -52,11 +51,10 @@ export async function pushCards(cards) {
 export async function pullCards(uid) {
     const cardSnapshot = await getDoc(doc(db, "cards", uid));
     if (cardSnapshot.exists()) {
-        console.log(cardSnapshot.data());
         return cardSnapshot.data().cards;
     }
     else {
-        console.log("no data");
+        // console.log("no data");
         return null;
     }
 }

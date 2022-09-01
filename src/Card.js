@@ -1,10 +1,9 @@
 import { X, Plus, ArrowUpShort, ArrowDownShort, Star, StarFill, PaintBucket, Check2 } from "@styled-icons/bootstrap";
 import { ModeEdit } from "@styled-icons/material"
 import styled from 'styled-components';
-import { ACTIONS, colors, colors2hex } from "./utils.js";
+import { ACTIONS, colors, colors2hex, hex2colors, isLight } from "./utils.js";
 import { useState, useRef, useEffect } from "react";
 import Subcards from "./Subcards.js";
-import MenuButton from "./MenuButton.js";
 
 const StyledX = styled(X)`
     &:hover {
@@ -22,6 +21,26 @@ const StyledStarFill = styled(StarFill)`
     color: ${colors.light_accent}
 `
 
+const LightPlus = styled(Plus)`
+    color: white;
+`
+
+const LightEdit = styled(ModeEdit)`
+    color: white;
+`
+
+const LightPaint = styled(PaintBucket)`
+    color: white;
+` 
+
+const LightArrowUp = styled(ArrowUpShort)`
+    color: white;
+`
+
+const LightArrowDown = styled(ArrowDownShort)`
+    color: white;
+`
+
 export default function Card({ card, children, card_level, card_siblings, dispatch }) {
     const id = card.id;
     const title = card.title ?? "";
@@ -36,6 +55,8 @@ export default function Card({ card, children, card_level, card_siblings, dispat
     const [new_title, set_new_title] = useState("");
     const [new_body, set_new_body] = useState(""); 
     const [error, set_error] = useState("");
+    const [edit_color, set_edit_color] = useState(false);
+    const [dark_buttons, set_dark_buttons] = useState(true);
 
     const [r, set_r] = useState(0);
     const [g, set_g] = useState(0);
@@ -44,6 +65,8 @@ export default function Card({ card, children, card_level, card_siblings, dispat
     const titleRef = useRef(null);
     const bodyRef = useRef(null);
     const colorRef = useRef(null);
+    const toolbarColorRef = useRef(null);
+    const toolbarRef = useRef(null);
 
     useEffect(() => {
         if (titleRef && titleRef.current) {
@@ -63,11 +86,34 @@ export default function Card({ card, children, card_level, card_siblings, dispat
 
     useEffect(() => {
         if (colorRef && colorRef.current) {
-            console.log("thing");
-            console.log(colors2hex(r, g, b));
-            colorRef.current.style.backgroundColor = `#${colors2hex(r, g, b)}`;
+            colorRef.current.style.backgroundColor = colors2hex(r, g, b);
         }
     }, [r, g, b])
+
+    useEffect(() => {
+        if (toolbarColorRef && toolbarColorRef.current) {
+            toolbarColorRef.current.style.backgroundColor = colors2hex(r, g, b);
+        }
+    }, [r, g, b])
+
+    useEffect(() => {
+        if (toolbarRef && toolbarRef.current && !error) {
+            console.log("called");
+            toolbarRef.current.style.backgroundColor = card.color;
+            document.documentElement.style.setProperty("--toolbar-color", card.color);
+        }
+    }, [card.finalized, card.color, error])
+
+    useEffect(() => {
+        if (isLight(card.color)) {
+            console.log("card color is light");
+            set_dark_buttons(true);
+        }
+        else {
+            console.log("card color is dark");
+            set_dark_buttons(false);
+        }
+    }, [card.color])
 
     useEffect(() => {
         if (!card.finalized) {
@@ -91,14 +137,14 @@ export default function Card({ card, children, card_level, card_siblings, dispat
     }, [card.finalized, card.p_title, card.p_body])
     
     function handleSubmit() {
-        console.log(siblings);
+        // console.log(siblings);
         if (new_title === "") {
             set_error("Please Enter a Title");
             setTimeout(() => {
                 set_error("");
             }, 2000);
         }
-        if (siblings.some(card => card.title === new_title)) {
+        else if (siblings.some(card => card.title === new_title)) {
             set_error("Another Subcollection already has this Title");
             setTimeout(() => {
                 set_error("");
@@ -142,6 +188,42 @@ export default function Card({ card, children, card_level, card_siblings, dispat
         else {
             dispatch({ type: ACTIONS.REMOVE, payload: {id: id}} );
         }
+    }
+
+    function toggleColorEdit() {
+        if (edit_color) {
+            console.log("cancelling color edit");
+            dispatch({ type: ACTIONS.CHANGE_COLOR, payload: { id: id, cancel: true }})
+            const p_color = hex2colors(card.p_color);
+            set_r(p_color[0]);
+            set_g(p_color[1]);
+            set_b(p_color[2]);
+            console.log("disabling edit color");
+            set_edit_color(false);
+        }
+        else {
+            console.log("beginning color edit");
+            dispatch({ type: ACTIONS.EDIT, payload: { id: id, color: true }})
+            const curr_color = hex2colors(card.color);
+            set_r(curr_color[0]);
+            set_g(curr_color[1]);
+            set_b(curr_color[2]);
+            set_edit_color(true);
+        }
+    }
+
+    function cancelColorEdit() {
+        dispatch({ type: ACTIONS.CHANGE_COLOR, payload: { id: id, cancel: true }})
+        const p_color = hex2colors(card.p_color);
+        set_r(p_color[0]);
+        set_g(p_color[1]);
+        set_b(p_color[2]);
+        set_edit_color(false);
+    }
+
+    function submitColorEdit() {
+        dispatch({ type: ACTIONS.CHANGE_COLOR, payload: { id: id, color: [r, g, b] }})
+        set_edit_color(false);
     }
 
     function removeCard() {
@@ -192,15 +274,19 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                     <div className="flex gap-2 items-center">
                         <div className="h-4 w-4 rounded-full ring-1 ring-primary" ref={ colorRef }/>
                         <div className="grow" />
-                        <StyledX className="h-6 w-6"/>
-                        <StyledCheck className="h-5 w-5"/>
+                        <button onClick={ () => cancelColorEdit() }>
+                            <StyledX className="h-6 w-6"/>
+                        </button> 
+                        <button onClick={ () => submitColorEdit() }>
+                            <StyledCheck className="h-5 w-5"/>
+                        </button>
                     </div>
                 </div>
             </div>
         )
     }
 
-    if (card.finalized) {
+    if (card.finalized || edit_color) {
         return (
             <div className="relative flex flex-col gap-1">
                 <div className="flex">
@@ -230,36 +316,54 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                             </div>
                             : collectionButtons(body)
                         }
-                        <div className="bg-light_accent h-8 flex items-center rounded-b-2xl">
+                        <div className={`${toolbarRef ? "" : "bg-light_accent"} h-8 flex items-center rounded-b-2xl`} ref={ toolbarRef }>
                             <button 
-                                className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center mr-2"
+                                className={`${dark_buttons ? "hover:brightness-90" : "hover:brightness-200"} w-fit h-fit bg-inherit rounded-full flex items-center mr-2`}
                                 onClick={() => dispatch({ type: ACTIONS.ADD_SUBCARD, payload: {id: id }})}
                             >
-                                <Plus className="h-6 w-6" />
+                                { dark_buttons 
+                                    ? <Plus className="h-6 w-6" />
+                                    : <LightPlus className="h-6 w-6" />
+                                }
                             </button>
                             <button
-                                className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center"
+                                className={`${dark_buttons ? "hover:brightness-90" : "hover:brightness-200"} w-fit h-fit bg-inherit rounded-full flex items-center`}
                                 onClick={() => beginEdit()}
                             >
-                                <ModeEdit className="h-6 w-6 p-1" />
+                                { dark_buttons 
+                                    ? <ModeEdit className="h-6 w-6 p-1" />
+                                    : <LightEdit className="h-6 w-6 p-1" />
+                                }
                             </button>
                             <span className="flex-grow" />
-                            <MenuButton
-                                display_icon={(<PaintBucket className="h-6 w-6 p-1 mx-3"/>)}
-                                menu_contents={colorMenu()}
-                            />
-                            <span className="font-mono px-2"> {score} </span>
+                            <div className="flex h-full items-center">
+                                { edit_color && colorMenu()}
+                                <button onClick={ () => toggleColorEdit() } className="w-fit h-fit bg-inherit rounded-full flex items-center">
+                                    { edit_color 
+                                        ? <div className="h-4 w-4 rounded-full ring-1 ring-primary mx-4" ref={ toolbarColorRef }/>
+                                        : dark_buttons ? <PaintBucket className="h-6 w-6 p-1 mx-3"/> : <LightPaint className="h-6 w-6 p-1 mx-3" />
+                                    }
+                                </button>
+                            </div>
+                            <span className={`font-mono px-2 ${dark_buttons ? "" : "text-light"}`}> {score} </span>
                             <button 
-                                className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center"
+                                className={`${dark_buttons ? "hover:brightness-90" : "hover:brightness-200"} w-fit h-fit bg-inherit rounded-full flex items-center`}
                                 onClick={() => dispatch({ type: ACTIONS.UPVOTE, payload: { id: id }})}
                             >
-                                    <ArrowUpShort className="h-6 w-6" />
+                                { dark_buttons
+                                    ? <ArrowUpShort className="h-6 w-6" />
+                                    : <LightArrowUp className="h-6 w-6" />
+                                }
+                                    
                             </button>
                             <button 
-                                className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center"
+                                className={`${dark_buttons ? "hover:brightness-90" : "hover:brightness-200"} w-fit h-fit bg-inherit rounded-full flex items-center`}
                                 onClick={() => dispatch({ type: ACTIONS.DOWNVOTE, payload: {id: id }})}
                             >
-                                <ArrowDownShort className="h-6 w-6" />
+                                { dark_buttons
+                                    ? <ArrowDownShort className="h-6 w-6" />
+                                    : <LightArrowDown className="h-6 w-6" />
+                                }
                             </button>
                         </div>
                     </div>
@@ -311,7 +415,7 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                         />
                         : collectionButtons(body)
                     }
-                    <div className={`${!error ? "bg-light_accent" : "danger-color" } h-8 flex items-center`}>
+                    <div className={`${!error ? "" : "danger-color" } h-8 flex items-center`} ref={ toolbarRef }>
                         <button onClick={ () => handleSubmit() }
                             className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center mr-2 underline px-2 py-0.5 font-sorabold"
                         >

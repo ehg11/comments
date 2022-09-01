@@ -2,7 +2,7 @@ import { TextParagraph, FileEarmarkPlus, JournalPlus, Github, X, Google, Wrench 
 import { UserCircle } from "@styled-icons/boxicons-solid";
 import { LogOut } from "@styled-icons/boxicons-regular";
 import styled from 'styled-components';
-import { ACTIONS, PAGES, test_card, colors, getChildren } from './utils.js';
+import { ACTIONS, PAGES, test_card, colors, getChildren, colors2hex } from './utils.js';
 import Card from "./Card.js";
 import { useReducer, useState, useEffect } from "react";
 import { auth, googleSignIn, logout, pushCards, pullCards } from "./firebase.js";
@@ -62,7 +62,7 @@ export default function App() {
                 return;
             }
             if (u) {
-                console.log(u);
+                // console.log(u);
                 if (user !== u) {
                     set_user(u);
                     pull(u);
@@ -89,7 +89,7 @@ export default function App() {
     function reducer(cards, action) {
         console.log(cards);
         // if there is a pending card, must finish the card before anything can be done
-        if (![ACTIONS.SUBMIT, ACTIONS.REMOVE].includes(action.type) && cards.find(card => !card.finalized)) {
+        if (![ACTIONS.SUBMIT, ACTIONS.REMOVE, ACTIONS.CHANGE_COLOR].includes(action.type) && cards.find(card => !card.finalized)) {
             return cards;
         }
         switch(action.type) {
@@ -109,11 +109,11 @@ export default function App() {
                     if (parentID && card.id === parentID) {
                         if (card.collection) {
                             if (!action.payload.cancel) {
-                                console.log(prev_title);
-                                console.log(card.body);
+                                // console.log(prev_title);
+                                // console.log(card.body);
                                 if (prev_title && action.payload.title !== prev_title) {
                                     let body = [...card.body];
-                                    console.log(body);
+                                    // console.log(body);
                                     let index = body.findIndex(e => e === prev_title);
                                     body[index] = action.payload.title;
                                     return {...card, body: body}
@@ -165,6 +165,14 @@ export default function App() {
                 })
             }
             case ACTIONS.EDIT: {
+                if (action.payload.color) {
+                    return cards.map(card => {
+                        if (card.id === action.payload.id) {
+                            return { ...card, finalized: false, p_color: card.color };
+                        }
+                        return card;
+                    })
+                }
                 return cards.map(card => {
                     if (card.id === action.payload.id) {
                         return { ...card, finalized: false, p_title: card.title, p_body: card.body };
@@ -182,6 +190,28 @@ export default function App() {
             }
             case ACTIONS.ADD_NEWCOLLECTION: {
                 return [emptyCard(undefined, undefined, true), ...cards];
+            }
+            case ACTIONS.CHANGE_COLOR: {
+                console.log("changing color");
+                if (action.payload.cancel) {
+                    return cards.map(card => {
+                        if (card.id === action.payload.id) {
+                            console.log("setting finalized to true");
+                            return { ...card, color: card.p_color, finalized: true}
+                        }
+                        return card;
+                    })
+                }
+                if (action.payload.color) {
+                    return cards.map(card => {
+                        if (card.id === action.payload.id) {
+                            const color = colors2hex(...action.payload.color)
+                            return { ...card, color: color, finalized: true}
+                        }
+                        return card;
+                    })
+                }
+                return cards;
             }
             default:
                 return cards;
@@ -203,6 +233,7 @@ export default function App() {
             display: true,
             parents: parents,
             collection: collection,
+            color: colors.light_accent,
         }
     }
 

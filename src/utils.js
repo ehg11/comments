@@ -10,6 +10,7 @@ export const ACTIONS = {
     EDIT: "edit",
     TOGGLE_DISPLAY: "toggle-display",
     ADD_NEWCOLLECTION: "add-newcollection",
+    CHANGE_COLOR: "change-color",
 }
 
 export const PAGES = {
@@ -55,9 +56,17 @@ export function colors2hex(r, g, b) {
         const ones = color % 16;
         colors[index] = `${hex[tens]}${hex[ones]}`;
     })
-    return colors.join("");
+    return `#${colors.join("")}`;
 }
 
 export function hex2colors(hex) {
-    return [hex.slice(0, 2), hex.slice(2, 4), hex.slice(4)];
+    let r = hex.slice(1, 3);
+    let g = hex.slice(3, 5);
+    let b = hex.slice(5);
+    return [parseInt(r, 16), parseInt(g, 16), parseInt(b, 16)];
 }
+
+export function isLight(hex) {
+    return hex2colors(hex).reduce((prev, curr) => prev + curr) / 3 > 128
+}
+ 

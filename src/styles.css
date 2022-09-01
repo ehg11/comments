@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --toolbar-color: #61AFA9;
+}
+
 @font-face {
     font-family: "Sora";
     src: url("./fonts/Sora-Regular.ttf") format('truetype');
@@ -55,7 +59,7 @@
         background: #f44336;
     }
     100% {
-        background: #61AFA9;
+        background: var(--toolbar-color);
     }
 }
 
@@ -82,5 +86,23 @@
     }
     100% {
         opacity: 1;
+    }
+}
+
+@keyframes rainbow {
+    from {
+        color: #6666ff;
+    }
+    10% {
+        color: #0099ff;
+    }
+    50% {
+        color: #00ff00;
+    }
+    75% {
+        color: #ff3399;
+    }
+    100% {
+        color: #6666ff;
     }
 }
