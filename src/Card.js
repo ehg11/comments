@@ -1,5 +1,6 @@
-import { X, Plus, ArrowUpShort, ArrowDownShort, Star, StarFill, PaintBucket, Check2 } from "@styled-icons/bootstrap";
+import { X, Plus, ArrowUpShort, ArrowDownShort, ArrowLeftShort, Star, StarFill, PaintBucket, Check2 } from "@styled-icons/bootstrap";
 import { ModeEdit } from "@styled-icons/material"
+import { EditSettings } from "@styled-icons/fluentui-system-regular"
 import styled from 'styled-components';
 import { ACTIONS, colors, colors2hex, hex2colors, isLight } from "./utils.js";
 import { useState, useRef, useEffect } from "react";
@@ -41,6 +42,18 @@ const LightArrowDown = styled(ArrowDownShort)`
     color: white;
 `
 
+const StyledEditSettings = styled(EditSettings)`
+    &:hover {
+        color: ${colors.light_accent};
+    }
+`
+
+const StyledArrowLeft = styled(ArrowLeftShort)`
+    &:hover {
+        color: ${colors.dark_accent};
+    }
+`
+
 export default function Card({ card, children, card_level, card_siblings, dispatch }) {
     const id = card.id;
     const title = card.title ?? "";
@@ -56,15 +69,19 @@ export default function Card({ card, children, card_level, card_siblings, dispat
     const [new_body, set_new_body] = useState(""); 
     const [error, set_error] = useState("");
     const [edit_color, set_edit_color] = useState(false);
+    const [color_options, show_color_options] = useState(false);
     const [dark_buttons, set_dark_buttons] = useState(true);
 
     const [r, set_r] = useState(0);
     const [g, set_g] = useState(0);
     const [b, set_b] = useState(0);
 
+    const [color_subcards, set_color_subcards] = useState(false);
+    const [color_stack, set_color_stack] = useState(false);
+    const [color_all, set_color_all] = useState(false);
+
     const titleRef = useRef(null);
     const bodyRef = useRef(null);
-    const colorRef = useRef(null);
     const toolbarColorRef = useRef(null);
     const toolbarRef = useRef(null);
 
@@ -85,16 +102,21 @@ export default function Card({ card, children, card_level, card_siblings, dispat
     }, [new_body])
 
     useEffect(() => {
-        if (colorRef && colorRef.current) {
-            colorRef.current.style.backgroundColor = colors2hex(r, g, b);
-        }
-    }, [r, g, b])
-
-    useEffect(() => {
         if (toolbarColorRef && toolbarColorRef.current) {
             toolbarColorRef.current.style.backgroundColor = colors2hex(r, g, b);
         }
     }, [r, g, b])
+
+    useEffect(() => {
+        console.log([color_subcards, color_stack, color_all]);
+        if (color_all) {
+            set_color_subcards(true);
+            set_color_stack(true);
+        }
+        if (color_stack) {
+            set_color_subcards(true);
+        }
+    }, [color_subcards, color_stack, color_all])
 
     useEffect(() => {
         if (toolbarRef && toolbarRef.current && !error) {
@@ -114,6 +136,16 @@ export default function Card({ card, children, card_level, card_siblings, dispat
             set_dark_buttons(false);
         }
     }, [card.color])
+
+    useEffect(() => {
+        if (edit_color) {
+            return;
+        }
+        set_color_subcards(false);
+        set_color_stack(false);
+        set_color_all(false);
+        show_color_options(false);
+    }, [edit_color])
 
     useEffect(() => {
         if (!card.finalized) {
@@ -218,11 +250,17 @@ export default function Card({ card, children, card_level, card_siblings, dispat
         set_r(p_color[0]);
         set_g(p_color[1]);
         set_b(p_color[2]);
+        set_color_subcards(false);
+        set_color_stack(false);
+        set_color_all(false);
         set_edit_color(false);
     }
 
     function submitColorEdit() {
-        dispatch({ type: ACTIONS.CHANGE_COLOR, payload: { id: id, color: [r, g, b] }})
+        dispatch({ type: ACTIONS.CHANGE_COLOR, payload: { id: id, color: [r, g, b], settings: [color_subcards, color_stack, color_all] }});
+        set_color_subcards(false);
+        set_color_stack(false);
+        set_color_all(false);
         set_edit_color(false);
     }
 
@@ -254,8 +292,9 @@ export default function Card({ card, children, card_level, card_siblings, dispat
 
     function colorMenu() {
         return (
-            <div className="absolute -translate-y-3/4 -translate-x-3/4 w-fit min-h-fit bg-white p-3 drop-shadow-lg rounded-xl">
-                <div className="flex flex-col gap-2">
+            <div className="absolute -translate-y-3/4 -translate-x-3/4 w-fit min-h-fit bg-white p-3 drop-shadow-lg rounded-xl transition-size">
+            {!color_options
+                ? <div className="flex flex-col gap-2">
                     <div className="flex gap-2">
                         <span className="font-sorabold text-red-500 w-6">R</span>
                         <span className="font-mono w-6">{r}</span>
@@ -272,8 +311,10 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                         <input type="range" min="0" max="255" defaultValue={b} onChange={e => set_b(e.target.value)}/>
                     </div>
                     <div className="flex gap-2 items-center">
-                        <div className="h-4 w-4 rounded-full ring-1 ring-primary" ref={ colorRef }/>
                         <div className="grow" />
+                        <button onClick={ () => show_color_options(true)}>
+                            <StyledEditSettings className="h-4 w-4" />
+                        </button>
                         <button onClick={ () => cancelColorEdit() }>
                             <StyledX className="h-6 w-6"/>
                         </button> 
@@ -282,6 +323,40 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                         </button>
                     </div>
                 </div>
+                : <div className="flex flex-col">
+                    <div className="flex items-center mb-2 gap-3">
+                        <button onClick={ () => show_color_options(false) }>
+                            <StyledArrowLeft className="h-8 w-8"/>
+                        </button>
+                        <span className="font-sorabold text-md text-important">Options</span>
+                    </div>
+                    <div className="flex items-center">
+                        <button className={`h-6 w-10 mx-2 bg-danger rounded-full flex flex-col justify-center overflow-hidden transition-colors ${color_subcards && "bg-success"}`}
+                            onClick={() => set_color_subcards(!color_subcards)}
+                        >
+                            <div className={`h-4 w-4 m-1 bg-white rounded-full ${color_subcards && "self-end"}`}></div>
+                        </button>
+                        <div className="whitespace-nowrap font-sora text-primary text-md">Use Color for All Subcards</div>
+                    </div>
+                    <div className="flex items-center mt-1">
+                        <button className={`h-6 w-10 mx-2 bg-danger rounded-full flex flex-col justify-center overflow-hidden transition-colors ${color_stack && "bg-success"}`}
+                            onClick={() => set_color_stack(!color_stack)}
+                        >
+                            <div className={`h-4 w-4 m-1 bg-white rounded-full ${color_stack && "self-end"}`}></div>
+                        </button>
+                        <div className="whitespace-nowrap font-sora text-primary text-md">Use Color for Card Stack</div>
+                    </div>
+                    <div className="flex items-center my-1">
+                        <button className={`h-6 w-10 mx-2 bg-danger rounded-full flex flex-col justify-center overflow-hidden transition-colors ${color_all && "bg-success"}`}
+                            onClick={() => set_color_all(!color_all)}
+                        >
+                            <div className={`h-4 w-4 m-1 bg-white rounded-full ${color_all && "self-end"}`}></div>
+                        </button>
+                        <div className="whitespace-nowrap font-sora text-primary text-md">Use Color for All Cards</div>
+                    </div>
+                </div>
+            }
+                
             </div>
         )
     }

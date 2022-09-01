@@ -11,6 +11,7 @@ export const ACTIONS = {
     TOGGLE_DISPLAY: "toggle-display",
     ADD_NEWCOLLECTION: "add-newcollection",
     CHANGE_COLOR: "change-color",
+    CHANGE_COLOR_OPTIONS: "change-color-option",
 }
 
 export const PAGES = {

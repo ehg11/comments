@@ -203,9 +203,43 @@ export default function App() {
                     })
                 }
                 if (action.payload.color) {
+                    const color = colors2hex( ...action.payload.color);
+                    if (action.payload.settings[2]) {
+                        console.log("changing all");
+                        return cards.map(card => {
+                            return { ...card, color: color, finalized: true}
+                        })
+                    }
+                    if (action.payload.settings[1]) {
+                        console.log("changing stack");
+                        const self = cards.find(card => card.id === action.payload.id);
+                        const parent_ids = self.parents;
+                        const children = cards.filter(card => card.parents.includes(self.id));
+                        const children_ids = children.map(card => card.id);
+                        const stack_ids = [self.id, ...parent_ids, ...children_ids];
+                        return cards.map(card => {
+                            if (stack_ids.includes(card.id)) {
+                                return { ...card, color: color, finalized: true}
+                            }
+                            return card;
+                        })
+                    }
+                    if (action.payload.settings[0]) {
+                        console.log("changing children");
+                        const children = cards.filter(card => card.parents.includes(action.payload.id));
+                        const children_ids = children.map(card => card.id)
+                        const stack_ids = [...children_ids, action.payload.id];
+                        console.log(stack_ids);
+                        return cards.map(card => {
+                            if (stack_ids.includes(card.id)) {
+                                return { ...card, color: color, finalized: true}
+                            }
+                            return card;
+                        })
+                    }
+                    console.log("changing single");
                     return cards.map(card => {
                         if (card.id === action.payload.id) {
-                            const color = colors2hex(...action.payload.color)
                             return { ...card, color: color, finalized: true}
                         }
                         return card;
