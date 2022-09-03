@@ -1,4 +1,5 @@
 export const ACTIONS = {
+    // card
     INIT: "init",
     SUBMIT: "submit",
     ADD_NEWCARD: "add-newcard",
@@ -12,6 +13,10 @@ export const ACTIONS = {
     ADD_NEWCOLLECTION: "add-newcollection",
     CHANGE_COLOR: "change-color",
     CHANGE_COLOR_OPTIONS: "change-color-option",
+    // prefs
+    INIT_PREFS: "init-prefs",
+    TOGGLE_RAINBOW_LEVEL: "toggle-rainbow-levels",
+    SET_DEFAULT_COLOR: "set-default-color",
 }
 
 export const PAGES = {
@@ -44,6 +49,8 @@ export const test_card = {
     parents: [],
     collection: false,
 }
+
+export const rainbow = ["red", "orange", "yellow", "green", "blue", "purple", "pink"];
 
 export function getChildren(cards, parentID) {
     return cards.filter(card => card.parents?.includes(parentID));

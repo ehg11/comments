@@ -1,6 +1,6 @@
-import { getChildren, ACTIONS, colors } from "./utils.js";
+import { getChildren, ACTIONS, colors, rainbow } from "./utils.js";
 import Card from "./Card.js";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ArrowBarDown } from "@styled-icons/bootstrap";
 import styled from 'styled-components';
 
@@ -8,10 +8,20 @@ const StyledExpand = styled(ArrowBarDown)`
     color: ${colors.dark_accent};
 `
 
-export default function Subcards({cards, children, card_level, dispatch}) {
+export default function Subcards({cards, children, card_level, dispatch, rainbow_levels}) {
 
     const level = card_level;
     const [display, set_display] = useState(!cards.some(card => card.collection));
+
+    const level_ref = useRef(null);
+
+    useEffect(() => {
+        if (level_ref && level_ref.current) {
+            console.log(level - 2 % rainbow.length);
+            level_ref.current.style.backgroundColor = rainbow.at((level - 2) % rainbow.length);
+            level_ref.current.style.opacity = 0.5;
+        }
+    }, [level, display])
 
     function toggleDisplay(type) {
         if (cards.concat(children).some(card => !card.finalized)) {
@@ -28,6 +38,10 @@ export default function Subcards({cards, children, card_level, dispatch}) {
 
     function levelBars() {
         if (level > 1) {
+            if (rainbow_levels) {
+                console.log(`returning button with color bg-${rainbow.at(level - 2)}-300`);
+                return <button className={`w-1 mr-3 hover:brightness-50 rounded-full drop-shadow-md`} onClick={() => toggleDisplay(false)} ref={ level_ref }/>;
+            }
             return <button className="w-1 bg-dark_accent mr-3 hover:brightness-50 rounded-full drop-shadow-md" onClick={() => toggleDisplay(false)}/>;
         }
     }
@@ -47,6 +61,7 @@ export default function Subcards({cards, children, card_level, dispatch}) {
                                     card_level={ level }
                                     card_siblings={ cards.filter(sibling => sibling.id !== card.id) }
                                     dispatch={ dispatch }
+                                    rainbow_levels={ rainbow_levels }
                                 />
                             )
                         })
@@ -71,6 +86,7 @@ export default function Subcards({cards, children, card_level, dispatch}) {
                                         card_level={ level }
                                         card_siblings={ cards.filter(sibling => sibling.id !== card.id) }
                                         dispatch={ dispatch }
+                                        rainbow_levels={ rainbow_levels }
                                     />
                                 )
                             })

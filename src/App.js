@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import { ACTIONS, PAGES, test_card, colors, getChildren, colors2hex } from './utils.js';
 import Card from "./Card.js";
 import { useReducer, useState, useEffect } from "react";
-import { auth, googleSignIn, logout, pushCards, pullCards } from "./firebase.js";
+import { auth, googleSignIn, logout, pushCards, pullCards, pushPrefs, pullPrefs } from "./firebase.js";
 import { onAuthStateChanged } from "firebase/auth";
 
 const StyledIcon = styled(TextParagraph)`
@@ -44,8 +44,13 @@ export default function App() {
     const test = false;
 
     const cards = test ? [test_card] : [];
+    const def_prefs = {
+        rainbow_levels: false,
+        default_color: null,
+    }
 
     const [all_cards, dispatch] = useReducer(reducer, cards);
+    const [user_prefs, prefs_dispatch] = useReducer(prefs_reducer, def_prefs)
     const [login_warning, set_login_warning] = useState(true);
     const [login_page, show_login_page] = useState(false);
     const [user, set_user] = useState(null);
@@ -54,7 +59,10 @@ export default function App() {
     useEffect(() => {
         const pull = async (user) => {
             const cards = await pullCards(user?.uid);
+            const prefs = await pullPrefs(user?.uid);
+            console.log(prefs);
             dispatch({ type: ACTIONS.INIT, payload: { cards: cards ?? [] }});
+            prefs_dispatch({ type: ACTIONS.INIT_PREFS, payload: { prefs: prefs ?? { rainbow_levels: false, default_color: null } }})
             set_pulled(!!cards);
         }
         onAuthStateChanged(auth, (u) => {
@@ -85,6 +93,18 @@ export default function App() {
         }
         pushCards(all_cards);
     }, [all_cards, pulled])
+
+    useEffect(() => {
+        async function pullPrefHelper(uid) {
+            const pulled_preferences = await pullPrefs(uid);
+            prefs_dispatch({ type: ACTIONS.INIT_PREFS, payload: { prefs: pulled_preferences ?? { rainbow_levels: false, default_color: null } }});
+
+        }
+        if (login_page && user) {
+            console.log("calling preference useeffect");
+            pullPrefHelper(user.uid);
+        }
+    }, [login_page, user]);
 
     function reducer(cards, action) {
         console.log(cards);
@@ -192,11 +212,9 @@ export default function App() {
                 return [emptyCard(undefined, undefined, true), ...cards];
             }
             case ACTIONS.CHANGE_COLOR: {
-                console.log("changing color");
                 if (action.payload.cancel) {
                     return cards.map(card => {
                         if (card.id === action.payload.id) {
-                            console.log("setting finalized to true");
                             return { ...card, color: card.p_color, finalized: true}
                         }
                         return card;
@@ -205,13 +223,11 @@ export default function App() {
                 if (action.payload.color) {
                     const color = colors2hex( ...action.payload.color);
                     if (action.payload.settings[2]) {
-                        console.log("changing all");
                         return cards.map(card => {
                             return { ...card, color: color, finalized: true}
                         })
                     }
                     if (action.payload.settings[1]) {
-                        console.log("changing stack");
                         const self = cards.find(card => card.id === action.payload.id);
                         const parent_ids = self.parents;
                         const children = cards.filter(card => card.parents.includes(self.id));
@@ -225,11 +241,9 @@ export default function App() {
                         })
                     }
                     if (action.payload.settings[0]) {
-                        console.log("changing children");
                         const children = cards.filter(card => card.parents.includes(action.payload.id));
                         const children_ids = children.map(card => card.id)
                         const stack_ids = [...children_ids, action.payload.id];
-                        console.log(stack_ids);
                         return cards.map(card => {
                             if (stack_ids.includes(card.id)) {
                                 return { ...card, color: color, finalized: true}
@@ -237,7 +251,6 @@ export default function App() {
                             return card;
                         })
                     }
-                    console.log("changing single");
                     return cards.map(card => {
                         if (card.id === action.payload.id) {
                             return { ...card, color: color, finalized: true}
@@ -249,6 +262,22 @@ export default function App() {
             }
             default:
                 return cards;
+        }
+    }
+
+    function prefs_reducer(prefs, action) {
+        switch (action.type) {
+            case ACTIONS.INIT_PREFS: {
+                console.log(action.payload.prefs);
+                return action.payload.prefs;
+            }
+            case ACTIONS.TOGGLE_RAINBOW_LEVEL: {
+                console.log(prefs);
+                return { ...prefs, rainbow_levels: !prefs.rainbow_levels}
+            }
+            default: {
+                return prefs;
+            }
         }
     }
     
@@ -287,9 +316,14 @@ export default function App() {
                     card={ card }
                     children={ getChildren(cards, card.id) }
                     dispatch={ dispatch }
+                    rainbow_levels={ user_prefs.rainbow_levels }
                 />
             )
         })
+    }
+
+    function savePrefs() {
+        pushPrefs(user_prefs).then(() => show_login_page(false));
     }
 
     function showPage(page) {
@@ -345,14 +379,34 @@ export default function App() {
             }
             case PAGES.PREFS: {
                 return (
-                    <div className="flex flex-col gap-4 justify-center items-center">
-                        <div className="flex gap-4 w-full">
+                    <div className="flex flex-col gap-4 justify-center items-center h-full">
+                        <div className="flex gap-4 w-full mb-4">
                             <Wrench className="w-12 h-12"/>
                             <div className="grow font-sorabold flex items-center text-2xl mx-4">
                                 Settings
                             </div>
                         </div>
-                        <span className="grow" />
+                        <div className="flex gap-4 w-full items-center">
+                            <button className={`flex gap-4 flex-col justify-start w-16 h-8 rounded-full bg-danger transition-colors ${user_prefs.rainbow_levels && "bg-success"}`}
+                                onClick={() => prefs_dispatch({ type: ACTIONS.TOGGLE_RAINBOW_LEVEL })}
+                            >
+                                <div className={`m-1 w-6 h-6 rounded-full bg-white ${user_prefs.rainbow_levels && "self-end"}`} />
+                            </button>
+                            <span className="font-sora text-primary"> Use Rainbow Comment Levels </span>
+                        </div>
+                        <div className="grow" />
+                        <div className="flex w-full mb-6">
+                            <button className="flex-grow font-sora text-lg p-2 hover:underline border-2 border-white hover:text-success hover:border-success rounded-full"
+                                onClick={ () => savePrefs() }
+                            >
+                                Save Preferences
+                            </button>
+                            <button className="flex-grow font-sora text-lg p-2 hover:underline border-2 border-white hover:text-danger hover:border-danger rounded-full"
+                                onClick={ () => show_login_page(false) }
+                            >
+                                Cancel
+                            </button>
+                        </div>
                         <button className="flex transition-colors rounded-full w-full text-light bg-light_accent hover:bg-danger justify-center items-center"
                             onClick={() => logout()}
                         >
@@ -393,9 +447,10 @@ export default function App() {
                 }
             </div>
             <div className="w-full h-full flex justify-center items-top py-12 overflow-y-scroll scroll">
-                <div className={`bg-white w-11/12 max-w-11/12 min-h-full h-fit p-12 rounded-xl shadow-lg flex flex-col gap-6 transition-size ease-in-out duration-500 ${login_page && "w-1/3 min-h-fit"}`}
+                <div className={`bg-white w-11/12 max-w-11/12 p-12 rounded-xl shadow-lg flex flex-col gap-6 transition-size ease-in-out duration-500 ${login_page ? user ? "h-full" : "w-1/3 min-h-fit" : "h-fit min-h-full"}`}
                 >
                     { !login_page ? showPage(PAGES.CARDS) : !user ? showPage(PAGES.LOGIN) : showPage(PAGES.PREFS) }
+                    {/* { showPage(PAGES.PREFS) } */}
                 </div>
             </div>
         </div>

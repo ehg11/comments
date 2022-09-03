@@ -58,3 +58,30 @@ export async function pullCards(uid) {
         return null;
     }
 }
+
+export async function pushPrefs(prefs) {
+    const uid = auth?.currentUser?.uid;
+    console.log(`pushing to ${uid}`);
+    if (!uid) {
+        return;
+    }
+    try {
+        await setDoc(doc(db, "prefs", uid), {prefs: prefs});
+    }
+    catch (error) {
+        console.log(error);
+    }
+}
+
+export async function pullPrefs(uid) {
+    console.log("getting preferences");
+    const prefSnapshot = await getDoc(doc(db, "prefs", uid));
+    if (prefSnapshot.exists()) {
+        console.log("preferences pulled: ", prefSnapshot.data().prefs);
+        return prefSnapshot.data().prefs;
+    }
+    else {
+        console.log("no preferences found");
+        return null;
+    }
+}

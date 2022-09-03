@@ -54,7 +54,7 @@ const StyledArrowLeft = styled(ArrowLeftShort)`
     }
 `
 
-export default function Card({ card, children, card_level, card_siblings, dispatch }) {
+export default function Card({ card, children, card_level, card_siblings, dispatch, rainbow_levels }) {
     const id = card.id;
     const title = card.title ?? "";
     const body = card.body ?? "";
@@ -108,7 +108,6 @@ export default function Card({ card, children, card_level, card_siblings, dispat
     }, [r, g, b])
 
     useEffect(() => {
-        console.log([color_subcards, color_stack, color_all]);
         if (color_all) {
             set_color_subcards(true);
             set_color_stack(true);
@@ -120,7 +119,6 @@ export default function Card({ card, children, card_level, card_siblings, dispat
 
     useEffect(() => {
         if (toolbarRef && toolbarRef.current && !error) {
-            console.log("called");
             toolbarRef.current.style.backgroundColor = card.color;
             document.documentElement.style.setProperty("--toolbar-color", card.color);
         }
@@ -128,11 +126,9 @@ export default function Card({ card, children, card_level, card_siblings, dispat
 
     useEffect(() => {
         if (isLight(card.color)) {
-            console.log("card color is light");
             set_dark_buttons(true);
         }
         else {
-            console.log("card color is dark");
             set_dark_buttons(false);
         }
     }, [card.color])
@@ -224,17 +220,14 @@ export default function Card({ card, children, card_level, card_siblings, dispat
 
     function toggleColorEdit() {
         if (edit_color) {
-            console.log("cancelling color edit");
             dispatch({ type: ACTIONS.CHANGE_COLOR, payload: { id: id, cancel: true }})
             const p_color = hex2colors(card.p_color);
             set_r(p_color[0]);
             set_g(p_color[1]);
             set_b(p_color[2]);
-            console.log("disabling edit color");
             set_edit_color(false);
         }
         else {
-            console.log("beginning color edit");
             dispatch({ type: ACTIONS.EDIT, payload: { id: id, color: true }})
             const curr_color = hex2colors(card.color);
             set_r(curr_color[0]);
@@ -449,6 +442,7 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                             children={ indirect_children }
                             card_level={ level + 1 }
                             dispatch={ dispatch }
+                            rainbow_levels={ rainbow_levels }
                         />
                 }
             </div>
