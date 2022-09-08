@@ -1,10 +1,10 @@
-import { TextParagraph, FileEarmarkPlus, JournalPlus, Github, X, Google, Wrench } from "@styled-icons/bootstrap";
+import { TextParagraph, FileEarmarkPlus, JournalPlus, Github, X, Google, Wrench, Check2 } from "@styled-icons/bootstrap";
 import { UserCircle } from "@styled-icons/boxicons-solid";
 import { LogOut } from "@styled-icons/boxicons-regular";
 import styled from 'styled-components';
-import { ACTIONS, PAGES, test_card, colors, getChildren, colors2hex } from './utils.js';
+import { ACTIONS, PAGES, test_card, colors, getChildren, colors2hex, hex2colors } from './utils.js';
 import Card from "./Card.js";
-import { useReducer, useState, useEffect } from "react";
+import { useReducer, useState, useEffect, useRef } from "react";
 import { auth, googleSignIn, logout, pushCards, pullCards, pushPrefs, pullPrefs } from "./firebase.js";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -30,6 +30,12 @@ const StyledX = styled(X)`
     } 
 `
 
+const StyledCheck = styled(Check2)`
+    &:hover {
+        color: ${colors.success};
+    }
+`
+
 const StyledGoogle = styled(Google)`
     color: ${colors.light};
 `
@@ -46,7 +52,7 @@ export default function App() {
     const cards = test ? [test_card] : [];
     const def_prefs = {
         rainbow_levels: false,
-        default_color: null,
+        default_color: colors.light_accent,
     }
 
     const [all_cards, dispatch] = useReducer(reducer, cards);
@@ -55,6 +61,23 @@ export default function App() {
     const [login_page, show_login_page] = useState(false);
     const [user, set_user] = useState(null);
     const [pulled, set_pulled] = useState(false);
+    const [color_menu, show_color_menu] = useState(false);
+
+    const [r, set_r] = useState(hex2colors(user_prefs.default_color)[0] ?? hex2colors(colors.light_accent)[0]);
+    const [g, set_g] = useState(hex2colors(user_prefs.default_color)[1] ?? hex2colors(colors.light_accent)[1]);
+    const [b, set_b] = useState(hex2colors(user_prefs.default_color)[2] ?? hex2colors(colors.light_accent)[2]);
+
+    const colorRef = useRef(null);
+
+    useEffect(() => {
+        if (!(login_page && user)) {
+            show_color_menu(false);
+            return;
+        }
+        if (colorRef && colorRef.current) {
+            colorRef.current.style.backgroundColor = colors2hex(r, g, b);
+        }
+    }, [r, g, b, login_page, user])
     
     useEffect(() => {
         const pull = async (user) => {
@@ -101,7 +124,6 @@ export default function App() {
 
         }
         if (login_page && user) {
-            console.log("calling preference useeffect");
             pullPrefHelper(user.uid);
         }
     }, [login_page, user]);
@@ -268,12 +290,13 @@ export default function App() {
     function prefs_reducer(prefs, action) {
         switch (action.type) {
             case ACTIONS.INIT_PREFS: {
-                console.log(action.payload.prefs);
                 return action.payload.prefs;
             }
             case ACTIONS.TOGGLE_RAINBOW_LEVEL: {
-                console.log(prefs);
                 return { ...prefs, rainbow_levels: !prefs.rainbow_levels}
+            }
+            case ACTIONS.SET_DEFAULT_COLOR: {
+                return { ...prefs, default_color: action.payload.color}
             }
             default: {
                 return prefs;
@@ -285,7 +308,7 @@ export default function App() {
         window.open(link, "_blank");
     };
 
-    function emptyCard(id = Date.now(), parents = [], collection = false) {
+    function emptyCard (id = Date.now(), parents = [], collection = false) {
         return {
             id: id,
             title: "",
@@ -296,12 +319,13 @@ export default function App() {
             display: true,
             parents: parents,
             collection: collection,
-            color: colors.light_accent,
+            color: null,
         }
     }
 
     function showCards(cards) {
         console.log(cards);
+        console.log(user_prefs);
         if (cards.length === 0) {
             return (
                 <div className="flex grow items-center justify-center text-primary font-sora m-6">
@@ -316,7 +340,7 @@ export default function App() {
                     card={ card }
                     children={ getChildren(cards, card.id) }
                     dispatch={ dispatch }
-                    rainbow_levels={ user_prefs.rainbow_levels }
+                    user_prefs={ user_prefs }
                 />
             )
         })
@@ -324,6 +348,31 @@ export default function App() {
 
     function savePrefs() {
         pushPrefs(user_prefs).then(() => show_login_page(false));
+    }
+
+    function setDefaultColor(action, color = null) {
+        switch (action) {
+            case ACTIONS.COLOR_RESET: {
+                set_r(hex2colors(colors.light_accent)[0]);
+                set_g(hex2colors(colors.light_accent)[1]);
+                set_b(hex2colors(colors.light_accent)[2]);
+                prefs_dispatch({ type: ACTIONS.SET_DEFAULT_COLOR, payload: { color: null}});
+                break;
+            }
+            case ACTIONS.COLOR_CANCEL: {
+                set_r(hex2colors(user_prefs.default_color)[0] ?? hex2colors(colors.light_accent)[0]);
+                set_g(hex2colors(user_prefs.default_color)[1] ?? hex2colors(colors.light_accent)[1]);
+                set_b(hex2colors(user_prefs.default_color)[2] ?? hex2colors(colors.light_accent)[2]);
+                break;
+            }
+            case ACTIONS.COLOR_SUBMIT: {
+                prefs_dispatch({ type: ACTIONS.SET_DEFAULT_COLOR, payload: { color: color }});
+                break;
+            }
+            default: 
+                break;
+        }
+        show_color_menu(false);
     }
 
     function showPage(page) {
@@ -394,6 +443,43 @@ export default function App() {
                             </button>
                             <span className="font-sora text-primary"> Use Rainbow Comment Levels </span>
                         </div>
+                        <div className="flex gap-4 w-full items-center">
+                            <div>
+                                { color_menu &&
+                                    <div className="flex flex-col gap-2 absolute bg-light drop-shadow-lg p-3 rounded-xl translate-y-1/4">
+                                        <div className="flex gap-2">
+                                            <span className="font-sorabold text-red-500 w-6">R</span>
+                                            <span className="font-mono w-6">{r}</span>
+                                            <input type="range" min="0" max="255" defaultValue={r} onChange={e => set_r(e.target.value)}/>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-sorabold text-green-500 w-6">G</span>
+                                            <span className="font-mono w-6">{g}</span>
+                                            <input type="range" min="0" max="255" defaultValue={g} onChange={e => set_g(e.target.value)}/>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <span className="font-sorabold text-blue-500 w-6">B</span>
+                                            <span className="font-mono w-6">{b}</span>
+                                            <input type="range" min="0" max="255" defaultValue={b} onChange={e => set_b(e.target.value)}/>
+                                        </div>
+                                        <div className="flex gap-2 items-center">
+                                            <button className="font-sora text-sm hover:underline" onClick={() => prefs_dispatch({ type: ACTIONS.SET_DEFAULT_COLOR, payload: { color: colors.light_accent}})}>
+                                                Reset
+                                            </button>
+                                            <div className="grow" />
+                                            <button onClick={ () => setDefaultColor(ACTIONS.COLOR_CANCEL) }>
+                                                <StyledX className="h-6 w-6"/>
+                                            </button> 
+                                            <button onClick={ () => setDefaultColor(ACTIONS.COLOR_SUBMIT, colors2hex(r, g, b))}>
+                                                <StyledCheck className="h-5 w-5"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                <button className="h-8 w-8 mx-4 bg-red-100 rounded-full" ref={ colorRef } onClick={ !color_menu ? () => show_color_menu(true) : () => setDefaultColor(ACTIONS.COLOR_CANCEL)}/>
+                            </div>
+                            <span className="font-sora text-primary"> Default Color </span>
+                        </div>
                         <div className="grow" />
                         <div className="flex w-full mb-6">
                             <button className="flex-grow font-sora text-lg p-2 hover:underline border-2 border-white hover:text-success hover:border-success rounded-full"
@@ -421,7 +507,7 @@ export default function App() {
         }
     }
 
-    return (
+    return ( pulled &&
         <div className="bg-dark_accent w-screen h-screen flex flex-col justify-start items-center">
             <div className="bg-dark shadow-lg w-full h-24 px-5 flex flex-row items-center opacity-90 gap-x-8">
                 <button className="flex grow items-center hover:brightness-75" onClick={() => show_login_page(false)}>

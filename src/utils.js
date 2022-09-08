@@ -17,6 +17,10 @@ export const ACTIONS = {
     INIT_PREFS: "init-prefs",
     TOGGLE_RAINBOW_LEVEL: "toggle-rainbow-levels",
     SET_DEFAULT_COLOR: "set-default-color",
+    // function actions
+    COLOR_RESET: "color-reset",
+    COLOR_CANCEL: "color-cancel",
+    COLOR_SUBMIT: "color-submit",
 }
 
 export const PAGES = {
@@ -68,6 +72,9 @@ export function colors2hex(r, g, b) {
 }
 
 export function hex2colors(hex) {
+    if (!hex) {
+        return [null, null, null];
+    }
     let r = hex.slice(1, 3);
     let g = hex.slice(3, 5);
     let b = hex.slice(5);

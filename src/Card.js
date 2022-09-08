@@ -54,7 +54,7 @@ const StyledArrowLeft = styled(ArrowLeftShort)`
     }
 `
 
-export default function Card({ card, children, card_level, card_siblings, dispatch, rainbow_levels }) {
+export default function Card({ card, children, card_level, card_siblings, dispatch, user_prefs }) {
     const id = card.id;
     const title = card.title ?? "";
     const body = card.body ?? "";
@@ -64,6 +64,7 @@ export default function Card({ card, children, card_level, card_siblings, dispat
     const siblings = card_siblings ?? [];
     const direct_children = children.filter(card => card.parents.length === level);
     const indirect_children = children.filter(card => card.parents.length !== level);
+    const color = card.color ?? user_prefs.default_color;
 
     const [new_title, set_new_title] = useState("");
     const [new_body, set_new_body] = useState(""); 
@@ -119,19 +120,19 @@ export default function Card({ card, children, card_level, card_siblings, dispat
 
     useEffect(() => {
         if (toolbarRef && toolbarRef.current && !error) {
-            toolbarRef.current.style.backgroundColor = card.color;
-            document.documentElement.style.setProperty("--toolbar-color", card.color);
+            toolbarRef.current.style.backgroundColor = color;
+            document.documentElement.style.setProperty("--toolbar-color", color);
         }
-    }, [card.finalized, card.color, error])
+    }, [card.finalized, color, error])
 
     useEffect(() => {
-        if (isLight(card.color)) {
+        if (isLight(color)) {
             set_dark_buttons(true);
         }
         else {
             set_dark_buttons(false);
         }
-    }, [card.color])
+    }, [color])
 
     useEffect(() => {
         if (edit_color) {
@@ -229,7 +230,7 @@ export default function Card({ card, children, card_level, card_siblings, dispat
         }
         else {
             dispatch({ type: ACTIONS.EDIT, payload: { id: id, color: true }})
-            const curr_color = hex2colors(card.color);
+            const curr_color = hex2colors(color);
             set_r(curr_color[0]);
             set_g(curr_color[1]);
             set_b(curr_color[2]);
@@ -442,7 +443,7 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                             children={ indirect_children }
                             card_level={ level + 1 }
                             dispatch={ dispatch }
-                            rainbow_levels={ rainbow_levels }
+                            user_prefs={ user_prefs }
                         />
                 }
             </div>
