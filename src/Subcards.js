@@ -8,7 +8,7 @@ const StyledExpand = styled(ArrowBarDown)`
     color: ${colors.dark_accent};
 `
 
-export default function Subcards({cards, children, card_level, dispatch, user_prefs }) {
+export default function Subcards({cards, children, card_level, dispatch, user_prefs, user }) {
 
     const level = card_level;
     const [display, set_display] = useState(!cards.some(card => card.collection));
@@ -85,6 +85,7 @@ export default function Subcards({cards, children, card_level, dispatch, user_pr
                                         card_siblings={ cards.filter(sibling => sibling.id !== card.id) }
                                         dispatch={ dispatch }
                                         user_prefs={ user_prefs }
+                                        user={ user }
                                     />
                                 )
                             })

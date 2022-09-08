@@ -61,6 +61,9 @@ export function getChildren(cards, parentID) {
 }
 
 export function colors2hex(r, g, b) {
+    if (!(r && g && b)) {
+        return null;
+    }
     const hex = "0123456789abcdef";
     let colors = [r, g, b];
     colors.forEach((color, index) => {

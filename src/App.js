@@ -75,6 +75,7 @@ export default function App() {
             return;
         }
         if (colorRef && colorRef.current) {
+            console.log("setting colorref to ", [r, g, b])
             colorRef.current.style.backgroundColor = colors2hex(r, g, b);
         }
     }, [r, g, b, login_page, user])
@@ -121,6 +122,12 @@ export default function App() {
         async function pullPrefHelper(uid) {
             const pulled_preferences = await pullPrefs(uid);
             prefs_dispatch({ type: ACTIONS.INIT_PREFS, payload: { prefs: pulled_preferences ?? { rainbow_levels: false, default_color: null } }});
+            if (pulled_preferences) {
+                const def_color = hex2colors(pulled_preferences.default_color);
+                set_r(def_color[0]);
+                set_g(def_color[1]);
+                set_b(def_color[2]);
+            }
 
         }
         if (login_page && user) {
@@ -242,45 +249,42 @@ export default function App() {
                         return card;
                     })
                 }
-                if (action.payload.color) {
-                    const color = colors2hex( ...action.payload.color);
-                    if (action.payload.settings[2]) {
-                        return cards.map(card => {
-                            return { ...card, color: color, finalized: true}
-                        })
-                    }
-                    if (action.payload.settings[1]) {
-                        const self = cards.find(card => card.id === action.payload.id);
-                        const parent_ids = self.parents;
-                        const children = cards.filter(card => card.parents.includes(self.id));
-                        const children_ids = children.map(card => card.id);
-                        const stack_ids = [self.id, ...parent_ids, ...children_ids];
-                        return cards.map(card => {
-                            if (stack_ids.includes(card.id)) {
-                                return { ...card, color: color, finalized: true}
-                            }
-                            return card;
-                        })
-                    }
-                    if (action.payload.settings[0]) {
-                        const children = cards.filter(card => card.parents.includes(action.payload.id));
-                        const children_ids = children.map(card => card.id)
-                        const stack_ids = [...children_ids, action.payload.id];
-                        return cards.map(card => {
-                            if (stack_ids.includes(card.id)) {
-                                return { ...card, color: color, finalized: true}
-                            }
-                            return card;
-                        })
-                    }
+                const color = colors2hex( ...action.payload.color);
+                if (action.payload.settings[2]) {
                     return cards.map(card => {
-                        if (card.id === action.payload.id) {
+                        return { ...card, color: color, finalized: true}
+                    })
+                }
+                if (action.payload.settings[1]) {
+                    const self = cards.find(card => card.id === action.payload.id);
+                    const parent_ids = self.parents;
+                    const children = cards.filter(card => card.parents.includes(self.id));
+                    const children_ids = children.map(card => card.id);
+                    const stack_ids = [self.id, ...parent_ids, ...children_ids];
+                    return cards.map(card => {
+                        if (stack_ids.includes(card.id)) {
                             return { ...card, color: color, finalized: true}
                         }
                         return card;
                     })
                 }
-                return cards;
+                if (action.payload.settings[0]) {
+                    const children = cards.filter(card => card.parents.includes(action.payload.id));
+                    const children_ids = children.map(card => card.id)
+                    const stack_ids = [...children_ids, action.payload.id];
+                    return cards.map(card => {
+                        if (stack_ids.includes(card.id)) {
+                            return { ...card, color: color, finalized: true}
+                        }
+                        return card;
+                    })
+                }
+                return cards.map(card => {
+                    if (card.id === action.payload.id) {
+                        return { ...card, color: color, finalized: true}
+                    }
+                    return card;
+                })
             }
             default:
                 return cards;
@@ -341,6 +345,7 @@ export default function App() {
                     children={ getChildren(cards, card.id) }
                     dispatch={ dispatch }
                     user_prefs={ user_prefs }
+                    user={ user }
                 />
             )
         })
@@ -356,7 +361,7 @@ export default function App() {
                 set_r(hex2colors(colors.light_accent)[0]);
                 set_g(hex2colors(colors.light_accent)[1]);
                 set_b(hex2colors(colors.light_accent)[2]);
-                prefs_dispatch({ type: ACTIONS.SET_DEFAULT_COLOR, payload: { color: null}});
+                prefs_dispatch({ type: ACTIONS.SET_DEFAULT_COLOR, payload: { color: colors.light_accent}});
                 break;
             }
             case ACTIONS.COLOR_CANCEL: {
@@ -463,7 +468,7 @@ export default function App() {
                                             <input type="range" min="0" max="255" defaultValue={b} onChange={e => set_b(e.target.value)}/>
                                         </div>
                                         <div className="flex gap-2 items-center">
-                                            <button className="font-sora text-sm hover:underline" onClick={() => prefs_dispatch({ type: ACTIONS.SET_DEFAULT_COLOR, payload: { color: colors.light_accent}})}>
+                                            <button className="font-sora text-sm hover:underline" onClick={() => setDefaultColor(ACTIONS.COLOR_RESET)}>
                                                 Reset
                                             </button>
                                             <div className="grow" />

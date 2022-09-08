@@ -1,4 +1,5 @@
 import { X, Plus, ArrowUpShort, ArrowDownShort, ArrowLeftShort, Star, StarFill, PaintBucket, Check2 } from "@styled-icons/bootstrap";
+import { UserCircle } from "@styled-icons/boxicons-solid";
 import { ModeEdit } from "@styled-icons/material"
 import { EditSettings } from "@styled-icons/fluentui-system-regular"
 import styled from 'styled-components';
@@ -54,7 +55,7 @@ const StyledArrowLeft = styled(ArrowLeftShort)`
     }
 `
 
-export default function Card({ card, children, card_level, card_siblings, dispatch, user_prefs }) {
+export default function Card({ card, children, card_level, card_siblings, dispatch, user_prefs, user }) {
     const id = card.id;
     const title = card.title ?? "";
     const body = card.body ?? "";
@@ -146,7 +147,7 @@ export default function Card({ card, children, card_level, card_siblings, dispat
 
     useEffect(() => {
         if (!card.finalized) {
-            if (card.p_title) {
+            if (card.p_title || card.p_body) {
                 if (titleRef && titleRef.current) {
                     titleRef.current.style.height = "0px";
                     let scrollHeight = titleRef.current.scrollHeight;
@@ -167,13 +168,13 @@ export default function Card({ card, children, card_level, card_siblings, dispat
     
     function handleSubmit() {
         // console.log(siblings);
-        if (new_title === "") {
-            set_error("Please Enter a Title");
-            setTimeout(() => {
-                set_error("");
-            }, 2000);
-        }
-        else if (siblings.some(card => card.title === new_title)) {
+        // if (new_title === "") {
+        //     set_error("Please Enter a Title");
+        //     setTimeout(() => {
+        //         set_error("");
+        //     }, 2000);
+        // }
+        if (siblings.some(card => card.title === new_title)) {
             set_error("Another Subcollection already has this Title");
             setTimeout(() => {
                 set_error("");
@@ -236,6 +237,14 @@ export default function Card({ card, children, card_level, card_siblings, dispat
             set_b(curr_color[2]);
             set_edit_color(true);
         }
+    }
+
+    function resetColorEdit() {
+        dispatch({ type: ACTIONS.CHANGE_COLOR, payload: { id: id, color: [null, null, null], settings: [color_subcards, color_stack, color_all]}});
+        set_color_subcards(false);
+        set_color_stack(false);
+        set_color_all(false);
+        set_edit_color(false);
     }
 
     function cancelColorEdit() {
@@ -305,6 +314,9 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                         <input type="range" min="0" max="255" defaultValue={b} onChange={e => set_b(e.target.value)}/>
                     </div>
                     <div className="flex gap-2 items-center">
+                        <button className="font-sora text-sm hover:underline" onClick={ () => resetColorEdit() }>
+                            Reset
+                        </button>
                         <div className="grow" />
                         <button onClick={ () => show_color_options(true)}>
                             <StyledEditSettings className="h-4 w-4" />
@@ -362,7 +374,21 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                     {/* {levelBars()} */}
                     <div className="flex flex-col w-full h-fit min-h-1/3 align-top child:px-5 drop-shadow-lg">
                         <div className="bg-light h-fit min-h-16 w-full flex items-center gap-1 pt-5 rounded-t-2xl">
-                            <span className="flex-grow font-sorabold text-2xl text-important mr-1"> {title} </span>
+                            { title
+                                ? <span className="flex-grow font-sorabold text-2xl text-important mr-1"> {title} </span>
+                                : <div className="flex-grow">
+                                    { !Boolean(user) 
+                                        ? <div className="flex items-center">
+                                            <UserCircle className="h-8 w-8 drop-shadow-sm"/>
+                                            <span className="font-sorabold text-2xl text-important mx-4"> Anonymous </span>
+                                        </div>
+                                        : <div className="flex items-center">
+                                            <img src={user.photoURL} alt={"Profile"} className="w-8 h-8 rounded-full drop-shadow-sm"/>
+                                            <span className="font-sorabold text-2xl text-important mx-4"> {user.displayName} </span>
+                                        </div>
+                                    }
+                                </div>
+                            }
                             <button 
                                 className="hover:brightness-90 w-fit h-fit bg-inherit rounded-full flex items-center self-start"
                                 onClick={() => dispatch({ type: ACTIONS.STAR, payload: {id: id}})}
@@ -444,6 +470,7 @@ export default function Card({ card, children, card_level, card_siblings, dispat
                             card_level={ level + 1 }
                             dispatch={ dispatch }
                             user_prefs={ user_prefs }
+                            user={ user }
                         />
                 }
             </div>
